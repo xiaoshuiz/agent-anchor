@@ -32,9 +32,12 @@ export interface ElectronAPI {
   agents: {
     list: () => Promise<Agent[]>
     get: (id: string) => Promise<Agent | null>
+    onInvalidated?: (callback: () => void) => void
   }
   messages: {
     list: (channelId: string) => Promise<Message[]>
+    send: (channelId: string, content: string, threadTs?: string | null) => Promise<Message | { error: string }>
+    onInvalidated?: (callback: () => void) => void
   }
   sidebar?: {
     getCollapsed: () => Promise<boolean>
