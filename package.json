@@ -37,6 +37,9 @@
     "directories": {
       "output": "dist",
       "buildResources": "build"
+    },
+    "publish": {
+      "provider": "github"
     }
   },
   "devDependencies": {

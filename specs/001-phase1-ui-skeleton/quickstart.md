@@ -32,7 +32,7 @@ pnpm run dev
 pnpm run build
 ```
 
-产物在 `out/` 目录。
+产物在 `out/` 目录（electron-vite 输出）。构建前会自动生成 `build/icon.png`。
 
 ## 打包（macOS）
 
@@ -40,7 +40,7 @@ pnpm run build
 pnpm exec electron-builder --mac
 ```
 
-需在 `package.json` 中配置 `build` 段（含 icon、mac 等）。
+打包产物在 `dist/` 目录（.dmg 等）。需在 `package.json` 中配置 `build` 段（含 icon、mac 等）。
 
 ## CI/CD
 
