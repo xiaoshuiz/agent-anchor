@@ -1,7 +1,9 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Notification } from 'electron'
 import { join } from 'path'
-import { initDbAndHandlers } from './ipc-handlers'
+import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, getCurrentChannelId } from './ipc-handlers'
 import { startWebSocketServer } from './websocket-server'
+import { getDb } from './db'
+import { getChannelById } from './db'
 
 function getIconPath(): string {
   const base = app.isPackaged ? join(app.getAppPath(), '..') : process.cwd()
@@ -41,9 +43,36 @@ function notifyAgentsRefresh(): void {
   mainWindow?.webContents?.send('agents:invalidated')
 }
 
+function notifyUnreadRefresh(): void {
+  mainWindow?.webContents?.send('unread:invalidated')
+}
+
+function notifyAgentStatusRefresh(): void {
+  mainWindow?.webContents?.send('agents:statusChanged')
+}
+
+function onNewMessage(channelId: string): void {
+  notifyRendererRefresh()
+  handleNewMessageFromAgent(channelId)
+  if (mainWindow && !mainWindow.isFocused() && channelId !== getCurrentChannelId()) {
+    const db = getDb()
+    if (db) {
+      const ch = getChannelById(db, channelId)
+      const title = ch ? ch.name : 'New message'
+      const body = 'You have a new message'
+      new Notification({ title, body }).show()
+    }
+  }
+}
+
 app.whenReady().then(() => {
   initDbAndHandlers()
-  startWebSocketServer(8765, { onNewMessage: notifyRendererRefresh, onAgentRegistered: notifyAgentsRefresh })
+  registerUnreadInvalidateSender(notifyUnreadRefresh)
+  startWebSocketServer(8765, {
+    onNewMessage,
+    onAgentRegistered: notifyAgentsRefresh,
+    onAgentStatusChanged: notifyAgentStatusRefresh,
+  })
   createWindow()
 
   app.on('activate', () => {

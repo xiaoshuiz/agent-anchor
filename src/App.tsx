@@ -6,6 +6,7 @@ import { MessageInput } from '@/components/Channel/MessageInput'
 import { useThemeStore } from '@/stores/themeStore'
 import { useChannels } from '@/hooks/useChannels'
 import { useUIStore } from '@/stores/uiStore'
+import { useUnread } from '@/hooks/useUnread'
 
 function ThemeSync() {
   const setDark = useThemeStore((s) => s.setDark)
@@ -39,12 +40,18 @@ function AutoSelectChannel() {
   return null
 }
 
+function UnreadSync() {
+  useUnread()
+  return null
+}
+
 export default function App() {
   return (
     <>
       <ThemeSync />
       <DarkClassSync />
       <AutoSelectChannel />
+      <UnreadSync />
       <div className="flex h-screen bg-slate-100 dark:bg-slate-900">
         <Sidebar />
         <main className="flex-1 flex flex-col min-w-0">

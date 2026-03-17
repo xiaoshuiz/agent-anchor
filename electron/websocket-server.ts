@@ -26,20 +26,45 @@ function sendResponse(ws: WebSocket, id: number | string | undefined, result?: u
   ws.send(JSON.stringify(msg))
 }
 
+const agentConnections = new Map<string, WebSocket>()
+
+export function getAgentStatusMap(): Record<string, 'online' | 'offline'> {
+  const agents = new Set(agentConnections.keys())
+  const status: Record<string, 'online' | 'offline'> = {}
+  for (const id of agents) {
+    status[id] = 'online'
+  }
+  return status
+}
+
+export function getOnlineAgentIds(): Set<string> {
+  return new Set(agentConnections.keys())
+}
+
 export interface WebSocketServerCallbacks {
-  onNewMessage?: () => void
+  onNewMessage?: (channelId: string) => void
   onAgentRegistered?: () => void
+  onAgentStatusChanged?: () => void
 }
 
 export function startWebSocketServer(
   port: number = DEFAULT_PORT,
   callbacks?: WebSocketServerCallbacks
 ): WebSocketServer {
-  const { onNewMessage, onAgentRegistered } = callbacks ?? {}
+  const { onNewMessage, onAgentRegistered, onAgentStatusChanged } = callbacks ?? {}
   const wss = new WebSocketServer({ port })
   console.log(`[Agent Anchor] WebSocket server listening on ws://127.0.0.1:${port}`)
 
   wss.on('connection', (ws: WebSocket) => {
+    let boundAgentId: string | null = null
+
+    ws.on('close', () => {
+      if (boundAgentId) {
+        agentConnections.delete(boundAgentId)
+        onAgentStatusChanged?.()
+      }
+    })
+
     ws.on('message', (data: Buffer | string) => {
       let req: JsonRpcRequest
       try {
@@ -87,8 +112,11 @@ export function startWebSocketServer(
             avatar: (params.avatar as string) ?? null,
             capabilities: params.capabilities as string[] | string | null ?? null,
           })
+          boundAgentId = agentId
+          agentConnections.set(agentId, ws)
           sendResponse(ws, id, { id: agent.id })
           onAgentRegistered?.()
+          onAgentStatusChanged?.()
         } catch (e) {
           sendResponse(ws, id, undefined, { code: -32603, message: String(e) })
         }
@@ -117,7 +145,7 @@ export function startWebSocketServer(
             threadTs: (params.threadTs as string) ?? null,
           })
           sendResponse(ws, id, { id: msg.id, timestamp: msg.timestamp })
-          onNewMessage?.()
+          onNewMessage?.(channelId)
         } catch (e) {
           sendResponse(ws, id, undefined, { code: -32603, message: String(e) })
         }

@@ -3,7 +3,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let db: Database.Database | null = null
 
@@ -57,6 +57,18 @@ function runMigrations(database: Database.Database): void {
       CREATE INDEX idx_messages_channel ON messages(channel_id);
       CREATE INDEX idx_messages_channel_ts ON messages(channel_id, timestamp);
       CREATE INDEX idx_threads_channel ON threads(channel_id);
+    `)
+    database.pragma(`user_version = ${DB_VERSION}`)
+  }
+
+  if (current < 2) {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS channel_unread (
+        channel_id TEXT PRIMARY KEY REFERENCES channels(id),
+        count INTEGER NOT NULL DEFAULT 0,
+        last_read_at INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_channel_unread_count ON channel_unread(count) WHERE count > 0;
     `)
     database.pragma(`user_version = ${DB_VERSION}`)
   }
@@ -186,6 +198,96 @@ export function insertAgent(
 
 export function getChannelById(database: Database.Database, id: string): Channel | null {
   return (database.prepare('SELECT id, name, description, created_at FROM channels WHERE id = ?').get(id) as Channel) ?? null
+}
+
+export function getUnreadCounts(database: Database.Database): Record<string, number> {
+  const rows = database.prepare(
+    'SELECT channel_id, count FROM channel_unread WHERE count > 0'
+  ).all() as { channel_id: string; count: number }[]
+  return Object.fromEntries(rows.map((r) => [r.channel_id, r.count]))
+}
+
+export function markChannelRead(database: Database.Database, channelId: string): void {
+  const now = Math.floor(Date.now() / 1000)
+  database.prepare(
+    'INSERT INTO channel_unread (channel_id, count, last_read_at) VALUES (?, 0, ?) ON CONFLICT(channel_id) DO UPDATE SET count = 0, last_read_at = excluded.last_read_at'
+  ).run(channelId, now)
+}
+
+export function incrementUnread(database: Database.Database, channelId: string): void {
+  database.prepare(
+    `INSERT INTO channel_unread (channel_id, count, last_read_at) VALUES (?, 1, NULL)
+     ON CONFLICT(channel_id) DO UPDATE SET count = count + 1`
+  ).run(channelId)
+}
+
+export interface SearchResultRow {
+  message: Message
+  channelName: string
+  fromName: string
+}
+
+export function searchMessages(
+  database: Database.Database,
+  params: { keyword: string; channelId?: string; fromId?: string }
+): SearchResultRow[] {
+  const { keyword, channelId, fromId } = params
+  const term = `%${keyword.trim()}%`
+  if (!term || term === '%%') return []
+
+  let sql = `
+    SELECT m.id, m.channel_id, m.from_type, m.from_id, m.content, m.timestamp, m.thread_ts,
+           c.name as channel_name
+    FROM messages m
+    JOIN channels c ON m.channel_id = c.id
+    WHERE m.content LIKE ?
+  `
+  const args: (string | number)[] = [term]
+  if (channelId) {
+    sql += ' AND m.channel_id = ?'
+    args.push(channelId)
+  }
+  if (fromId) {
+    sql += ' AND m.from_id = ?'
+    args.push(fromId)
+  }
+  sql += ' ORDER BY m.timestamp DESC LIMIT 100'
+
+  const rows = database.prepare(sql).all(...args) as Array<{
+    id: string
+    channel_id: string
+    from_type: string
+    from_id: string
+    content: string
+    timestamp: number
+    thread_ts: string | null
+    channel_name: string
+  }>
+
+  const agentCache = new Map<string, string>()
+  return rows.map((r) => {
+    let fromName = 'You'
+    if (r.from_type === 'agent') {
+      if (!agentCache.has(r.from_id)) {
+        const agent = database.prepare('SELECT name FROM agents WHERE id = ?').get(r.from_id) as { name: string } | undefined
+        agentCache.set(r.from_id, agent?.name ?? r.from_id)
+      }
+      fromName = agentCache.get(r.from_id) ?? r.from_id
+    }
+    return {
+      message: {
+        id: r.id,
+        channel_id: r.channel_id,
+        from_type: r.from_type as 'user' | 'agent',
+        from_id: r.from_id,
+        content: r.content,
+        timestamp: r.timestamp,
+        thread_ts: r.thread_ts,
+      },
+      channelName: r.channel_name,
+      fromName,
+    }
+  })
 }
 
 export function getDb(): Database.Database | null {
