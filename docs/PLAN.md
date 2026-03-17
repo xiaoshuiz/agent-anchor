@@ -16,26 +16,56 @@
 
 ## 二、需要准备的东西
 
-### 2.1 技术选型
+### 2.1 技术选型（已确认）
 
-| 维度 | 推荐方案 | 备选 | 说明 |
-|------|----------|------|------|
-| **桌面框架** | **Tauri 2.x** | Electron | Tauri 更轻量、内存占用小，适合本地工具；Electron 生态更成熟 |
-| **前端框架** | **React 18+** | Vue 3 | 与 Slack 技术栈一致，组件生态丰富 |
-| **状态管理** | **Zustand** 或 Jotai | Redux | 轻量，适合中小型应用 |
-| **样式方案** | **Tailwind CSS** + **shadcn/ui** | Styled Components | 快速搭建 Slack 风格界面 |
-| **本地通信** | **IPC (Tauri)** + **本地 WebSocket** | 文件/DB 轮询 | 实时双向通信 |
-| **数据持久化** | **SQLite** (via `sqlx`) | IndexedDB | 消息历史、Agent 元数据 |
-| **Agent 协议** | **自定义 JSON-RPC over WebSocket** | MCP / HTTP | 统一 Agent 接入规范 |
+| 维度 | 方案 | 说明 |
+|------|------|------|
+| **桌面框架** | **Electron** | 生态成熟，与 Slack 技术栈一致 |
+| **前端框架** | **React 18+** | 组件生态丰富 |
+| **状态管理** | **Zustand** 或 Jotai | 轻量，适合中小型应用 |
+| **样式方案** | **Tailwind CSS** + **shadcn/ui** | 快速搭建 Slack 风格界面 |
+| **本地通信** | **Electron IPC** + **本地 WebSocket** | 主进程与渲染进程通信，Agent 通过 WebSocket 接入 |
+| **数据持久化** | **SQLite** (via `better-sqlite3`) | 主进程访问，消息历史、Agent 元数据 |
+| **Agent 协议** | **自定义 JSON-RPC over WebSocket** | 统一 Agent 接入规范 |
+| **开发约束** | **GitHub Spec-Kit** | Spec-Driven Development，规范仓库开发流程 |
 
 ### 2.2 开发环境
 
 - **Node.js** 18+
-- **Rust** (若选 Tauri)
 - **pnpm** 或 npm
 - **macOS** 开发/测试环境
+- **Spec-Kit**：Python 3.11+、`uv` 包管理器（用于 spec-kit 工作流）
 
-### 2.3 设计资源
+### 2.3 GitHub Spec-Kit 约束
+
+本仓库使用 [GitHub Spec-Kit](https://github.com/github/spec-kit) 进行 **Spec-Driven Development**，将规格作为可执行约束，指导 AI 编码 Agent 实现。
+
+**初始化命令**（在已有仓库中）：
+```bash
+uvx --from git+https://github.com/github/spec-kit.git specify init . --ai claude
+# 或 specify init . --ai copilot
+```
+
+**生成结构**：
+```
+.specify/
+├── spec.md          # 项目目标、需求、约束
+├── plan.md          # 技术方案、架构
+├── tasks/           # 可执行任务单元
+└── constitution.md  # 项目原则与标准（可选）
+
+.github/             # AI Agent 使用的 prompt 文件
+```
+
+**四阶段工作流**：
+1. **Specify** (`/speckit.specify`) — 定义做什么、为什么
+2. **Plan** (`/speckit.plan`) — 技术方案与架构
+3. **Tasks** (`/speckit.tasks`) — 拆解为可评审任务
+4. **Implement** (`/speckit.implement`) — 按任务实现
+
+**前置条件**：Git、Python 3.11+、`uv`、支持的 AI Agent（Claude / Copilot / Gemini / Codebuddy）
+
+### 2.4 设计资源
 
 - Slack 桌面端截图/录屏（参考布局、交互）
 - 图标与品牌素材（Logo、Agent 头像占位）
@@ -111,9 +141,10 @@
 ### Phase 1：基础框架与 UI 骨架（2-3 周）
 
 1. **项目初始化**
-   - Tauri + React + TypeScript 脚手架
+   - Electron + React + TypeScript 脚手架
    - Tailwind + shadcn/ui 配置
    - 基础路由（侧边栏、主区域、详情面板）
+   - 运行 `specify init .` 初始化 Spec-Kit，将本 PLAN 同步到 `.specify/spec.md` 与 `plan.md`
 
 2. **Slack 风格布局**
    - 三栏布局：Sidebar | Channel | Thread
@@ -127,10 +158,11 @@
 ### Phase 2：本地通信与数据层（2-3 周）
 
 1. **本地 WebSocket 服务**
-   - Tauri 后端启动 WebSocket 服务（如 `ws://127.0.0.1:8765`）
-   - 前端连接并收发消息
+   - Electron 主进程启动 WebSocket 服务（如 `ws://127.0.0.1:8765`）
+   - 渲染进程通过 IPC 或直接连接收发消息
 
 2. **SQLite 持久化**
+   - 主进程使用 `better-sqlite3` 访问 SQLite
    - 消息表、频道表、Agent 表
    - 启动时加载历史消息
 
@@ -176,14 +208,18 @@
 
 ```
 agent-anchor/
-├── src-tauri/           # Tauri 后端 (Rust)
-│   ├── src/
-│   │   ├── main.rs
-│   │   ├── websocket.rs
-│   │   ├── db.rs
-│   │   └── agent_registry.rs
-│   └── Cargo.toml
-├── src/                 # React 前端
+├── .specify/            # Spec-Kit 规格（约束仓库开发）
+│   ├── spec.md
+│   ├── plan.md
+│   ├── tasks/
+│   └── constitution.md
+├── electron/            # Electron 主进程
+│   ├── main.ts
+│   ├── preload.ts
+│   ├── websocket.ts
+│   ├── db.ts            # better-sqlite3
+│   └── agent-registry.ts
+├── src/                 # React 渲染进程
 │   ├── components/
 │   │   ├── Sidebar/
 │   │   ├── Channel/
@@ -208,21 +244,24 @@ agent-anchor/
 
 | 风险 | 缓解措施 |
 |------|----------|
-| Tauri 学习曲线 | 先用 Electron 快速验证，再迁移；或直接 Tauri 官方模板起步 |
+| Electron 包体积 | 按需依赖，asar 打包，后续可评估 Tauri 迁移 |
+| better-sqlite3 原生模块 | 确保 Electron 与 Node ABI 匹配，使用 electron-rebuild |
 | Agent 生态分散 | 先支持自定义协议，预留 MCP/HTTP 适配层 |
 | 本地 WebSocket 端口冲突 | 支持配置端口，启动时检测占用 |
 | 消息量过大性能 | 虚拟列表、分页加载、SQLite 索引优化 |
+| Spec-Kit 与现有文档同步 | 将 PLAN.md 核心内容同步到 `.specify/plan.md`，保持单一事实来源 |
 
 ---
 
 ## 七、下一步行动
 
-1. **确认技术栈**：Tauri vs Electron，React vs Vue
-2. **搭建脚手架**：按上述目录结构初始化项目
-3. **实现 Phase 1**：完成基础 UI 与 Mock 数据
-4. **定义 Agent 协议**：输出正式版 JSON-RPC 规范文档
-5. **编写 Agent SDK 示例**：至少一个 Node 或 Python 示例 Agent
+1. **初始化 Spec-Kit**：`uvx --from git+https://github.com/github/spec-kit.git specify init .`
+2. **同步规格**：将本 PLAN 核心内容写入 `.specify/spec.md` 与 `plan.md`
+3. **搭建脚手架**：Electron + React + TypeScript，按上述目录结构初始化
+4. **实现 Phase 1**：完成基础 UI 与 Mock 数据
+5. **定义 Agent 协议**：输出正式版 JSON-RPC 规范文档
+6. **编写 Agent SDK 示例**：至少一个 Node 或 Python 示例 Agent
 
 ---
 
-*文档版本：v0.1 | 最后更新：2025-03*
+*文档版本：v0.2 | 技术栈：Electron + SQLite + Spec-Kit | 最后更新：2025-03*

@@ -4,9 +4,8 @@
 
 - [ ] Node.js 18+ 已安装
 - [ ] pnpm 或 npm 已安装
-- [ ] 若选 Tauri：Rust + Cargo 已安装
-- [ ] 若选 Electron：仅需 Node 即可
 - [ ] macOS 开发机（或虚拟机）
+- [ ] Spec-Kit：Python 3.11+、`uv` 已安装（`pip install uv` 或 `brew install uv`）
 
 ## 设计参考
 
@@ -14,28 +13,32 @@
 - [ ] 确定品牌色与字体（可先用 Slack 风格占位）
 - [ ] 准备 Logo 与 Agent 默认头像
 
-## 技术决策（需确认）
+## 技术决策（已确认）
 
-| 决策项 | 选项 | 建议 |
-|--------|------|------|
-| 桌面框架 | Tauri / Electron | Tauri（轻量） |
-| 前端框架 | React / Vue | React |
-| 样式 | Tailwind+shadcn / 其他 | Tailwind+shadcn |
-| 数据存储 | SQLite / IndexedDB | SQLite |
+| 决策项 | 选择 |
+|--------|------|
+| 桌面框架 | **Electron** |
+| 前端框架 | React |
+| 样式 | Tailwind + shadcn/ui |
+| 数据存储 | **SQLite** (better-sqlite3) |
+| 开发约束 | **GitHub Spec-Kit** |
 
 ## 依赖包（预估）
 
-### Tauri + React
-- `@tauri-apps/api`, `@tauri-apps/plugin-*`
+### Electron + React + SQLite
+- `electron`, `electron-builder`
+- `better-sqlite3`
 - `react`, `react-dom`, `react-router-dom`
 - `zustand`, `@tanstack/react-query`
 - `tailwindcss`, `tailwindcss-animate`
 - `lucide-react`（图标）
 - `date-fns`（时间格式化）
 
-### Electron + React（备选）
-- `electron`, `electron-builder`
-- 同上 React 生态
+## Spec-Kit 初始化
+
+- [ ] 运行 `uvx --from git+https://github.com/github/spec-kit.git specify init .`
+- [ ] 将 `docs/PLAN.md` 核心内容同步到 `.specify/spec.md` 与 `plan.md`
+- [ ] 确认 `.github/` 下已生成 AI Agent 使用的 prompt 文件
 
 ## 第一个可运行版本目标
 
