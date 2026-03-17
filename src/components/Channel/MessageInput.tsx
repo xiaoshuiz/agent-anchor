@@ -1,19 +1,34 @@
 import { useState } from 'react'
+import { useUIStore } from '@/stores/uiStore'
 
 export function MessageInput() {
   const [value, setValue] = useState('')
+  const selectedChannelId = useUIStore((s) => s.selectedChannelId)
+  const refreshMessages = useUIStore((s) => s.refreshMessages)
+
+  const sendMessage = async () => {
+    const trimmed = value.trim()
+    if (!trimmed || !selectedChannelId) return
+    const api = window.electronAPI?.messages
+    if (!api?.send) return
+    const result = await api.send(selectedChannelId, trimmed)
+    if (result && 'error' in result) {
+      console.error('Send failed:', result.error)
+      return
+    }
+    setValue('')
+    refreshMessages()
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Phase 1: no-op
-    setValue('')
+    sendMessage()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      // Phase 1: no-op
-      setValue('')
+      sendMessage()
     }
   }
 

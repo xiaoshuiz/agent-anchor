@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { Message } from '@/types/electron'
+import { useUIStore } from '@/stores/uiStore'
 
 export function useMessages(channelId: string | null): { messages: Message[]; loading: boolean; error: Error | null } {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const refreshTrigger = useUIStore((s) => s.messagesRefreshTrigger)
+  const refreshMessages = useUIStore((s) => s.refreshMessages)
+
+  useEffect(() => {
+    window.electronAPI?.messages?.onInvalidated?.(refreshMessages)
+  }, [refreshMessages])
 
   useEffect(() => {
     if (!channelId) {
@@ -23,7 +30,7 @@ export function useMessages(channelId: string | null): { messages: Message[]; lo
       .then(setMessages)
       .catch(setError)
       .finally(() => setLoading(false))
-  }, [channelId])
+  }, [channelId, refreshTrigger])
 
   return { messages, loading, error }
 }

@@ -1,6 +1,15 @@
 import { ipcMain } from 'electron'
 import Store from 'electron-store'
-import { initDb, seedGeneralIfEmpty, channelsList, agentsList, messagesListByChannel, getDb } from './db'
+import {
+  initDb,
+  seedGeneralIfEmpty,
+  channelsList,
+  agentsList,
+  messagesListByChannel,
+  insertMessage,
+  getChannelById,
+  getDb,
+} from './db'
 
 const uiStore = new Store<{ sidebarCollapsed?: boolean }>({ name: 'ui' })
 
@@ -34,6 +43,38 @@ export function registerIpcHandlers(): void {
     if (!database) return []
     return messagesListByChannel(database, channelId)
   })
+
+  ipcMain.handle(
+    'messages:send',
+    async (
+      _,
+      channelId: string,
+      content: string,
+      threadTs?: string | null
+    ): Promise<
+      | { id: string; channel_id: string; from_type: string; from_id: string; content: string; timestamp: number; thread_ts: string | null }
+      | { error: string }
+    > => {
+      const database = getDb()
+      if (!database) return { error: 'Database not initialized' }
+      const trimmed = content?.trim?.() ?? ''
+      if (!trimmed) return { error: 'Content cannot be empty' }
+      const channel = getChannelById(database, channelId)
+      if (!channel) return { error: 'Channel not found' }
+      try {
+        const msg = insertMessage(database, {
+          channelId,
+          fromType: 'user',
+          fromId: 'user',
+          content: trimmed,
+          threadTs: threadTs ?? null,
+        })
+        return msg
+      } catch (e) {
+        return { error: String(e) }
+      }
+    }
+  )
 
   ipcMain.handle('sidebar:getCollapsed', () => uiStore.get('sidebarCollapsed', false))
   ipcMain.handle('sidebar:setCollapsed', (_, collapsed: boolean) => {

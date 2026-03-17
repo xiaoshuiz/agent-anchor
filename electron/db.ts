@@ -118,6 +118,76 @@ export function messagesListByChannel(database: Database.Database, channelId: st
   ).all(channelId) as Message[]
 }
 
+export function insertMessage(
+  database: Database.Database,
+  params: {
+    channelId: string
+    fromType: 'user' | 'agent'
+    fromId: string
+    content: string
+    threadTs?: string | null
+  }
+): Message {
+  const id = randomUUID()
+  const ts = Date.now()
+  database
+    .prepare(
+      `INSERT INTO messages (id, channel_id, from_type, from_id, content, timestamp, thread_ts)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      id,
+      params.channelId,
+      params.fromType,
+      params.fromId,
+      params.content,
+      ts,
+      params.threadTs ?? null
+    )
+  return {
+    id,
+    channel_id: params.channelId,
+    from_type: params.fromType,
+    from_id: params.fromId,
+    content: params.content,
+    timestamp: ts,
+    thread_ts: params.threadTs ?? null,
+  }
+}
+
+export function insertAgent(
+  database: Database.Database,
+  params: { id: string; name: string; description?: string | null; avatar?: string | null; capabilities?: string | null }
+): Agent {
+  const now = Math.floor(Date.now() / 1000)
+  const caps = params.capabilities ?? null
+  const capsStr = typeof caps === 'string' ? caps : caps ? JSON.stringify(caps) : null
+  database
+    .prepare(
+      `INSERT INTO agents (id, name, description, avatar, capabilities, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         description = excluded.description,
+         avatar = excluded.avatar,
+         capabilities = excluded.capabilities`
+    )
+    .run(
+      params.id,
+      params.name,
+      params.description ?? null,
+      params.avatar ?? null,
+      capsStr,
+      now
+    )
+  const row = database.prepare('SELECT id, name, description, avatar, capabilities, created_at FROM agents WHERE id = ?').get(params.id) as Agent
+  return row
+}
+
+export function getChannelById(database: Database.Database, id: string): Channel | null {
+  return (database.prepare('SELECT id, name, description, created_at FROM channels WHERE id = ?').get(id) as Channel) ?? null
+}
+
 export function getDb(): Database.Database | null {
   return db
 }
