@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-electron/
+out/
+*.local
+
+# Spec-Kit output (constitution.md is committed)
+.specify/memory/*
+!.specify/memory/constitution.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log
+
+# Agent credentials (do not commit)
+.claude/
+
+# Env
+.env
+.env.local
