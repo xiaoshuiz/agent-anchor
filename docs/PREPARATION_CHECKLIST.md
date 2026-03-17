@@ -36,9 +36,10 @@
 
 ## Spec-Kit 初始化
 
-- [ ] 运行 `uvx --from git+https://github.com/github/spec-kit.git specify init .`
-- [ ] 将 `docs/PLAN.md` 核心内容同步到 `.specify/spec.md` 与 `plan.md`
-- [ ] 确认 `.github/` 下已生成 AI Agent 使用的 prompt 文件
+- [x] 运行 `uvx --from git+https://github.com/github/spec-kit.git specify init .`
+- [x] 将 `docs/PLAN.md` 核心内容同步到 `.specify/spec.md` 与 `plan.md`
+- [x] 复制 `.claude/commands/` 到 `.cursor/commands/`（Cursor 使用）
+- [x] 创建 `.specify/memory/constitution.md`（Agent Anchor 宪法）
 
 ## 第一个可运行版本目标
 

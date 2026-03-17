@@ -1,0 +1,30 @@
+---
+description: Spec-Kit Spec-Driven Development workflow for Agent Anchor
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Spec-Kit Workflow (Agent Anchor)
+
+This project uses **GitHub Spec-Kit** for Spec-Driven Development. Follow this workflow:
+
+## Commands
+
+- **`/speckit.constitution`** — Update project principles (`.specify/memory/constitution.md`)
+- **`/speckit.specify`** — Create feature spec from natural language
+- **`/speckit.plan`** — Create technical plan
+- **`/speckit.tasks`** — Break plan into tasks
+- **`/speckit.implement`** — Execute tasks
+
+## Key Files
+
+- `.specify/spec.md` — Project goals, requirements
+- `.specify/plan.md` — Technical architecture
+- `.specify/memory/constitution.md` — Project principles (MUST comply)
+- `docs/PLAN.md` — Full development plan
+
+## Before Coding
+
+1. Ensure spec/plan exist for new features
+2. Follow constitution principles (Electron process boundaries, Agent protocol, TypeScript strict)
+3. SQLite only in main process; React only in renderer

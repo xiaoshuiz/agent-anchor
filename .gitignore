@@ -7,8 +7,9 @@ dist-electron/
 out/
 *.local
 
-# Spec-Kit output
-.specify/memory/
+# Spec-Kit output (constitution.md is committed)
+.specify/memory/*
+!.specify/memory/constitution.md
 
 # IDE
 .idea/
@@ -24,7 +25,7 @@ Thumbs.db
 *.log
 npm-debug.log
 
-# Spec-Kit / Agent (may contain credentials)
+# Agent credentials (do not commit)
 .claude/
 
 # Env

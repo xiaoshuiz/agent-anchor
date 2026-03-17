@@ -52,9 +52,12 @@ uvx --from git+https://github.com/github/spec-kit.git specify init . --ai claude
 ├── spec.md          # 项目目标、需求、约束
 ├── plan.md          # 技术方案、架构
 ├── tasks/           # 可执行任务单元
-└── constitution.md  # 项目原则与标准（可选）
+└── memory/
+    └── constitution.md  # 项目宪法（必读）
 
-.github/             # AI Agent 使用的 prompt 文件
+.claude/commands/    # Claude 使用的 slash 命令
+.cursor/commands/   # Cursor 使用的 slash 命令（与 .claude 同步）
+.cursor/rules/      # Cursor 自动应用的规则
 ```
 
 **四阶段工作流**：

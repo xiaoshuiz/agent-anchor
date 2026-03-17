@@ -18,3 +18,5 @@ pnpm run build  # 生产构建
 
 - [开发规划与架构](docs/PLAN.md)
 - [准备清单](docs/PREPARATION_CHECKLIST.md)
+- [项目宪法](.specify/memory/constitution.md) — Spec-Kit 约束原则
+- [Cursor 配置](.cursor/README.md) — Spec-Kit 命令与规则
