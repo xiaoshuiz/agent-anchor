@@ -68,6 +68,7 @@ pnpm run build
 
 ### ✅ Phase 2 — WebSocket & Agent SDK
 - 📤 **User messages** — Send from the app, persisted in SQLite
+- 🔗 **MCP compatibility** — Expose Agent Anchor as MCP server (`http://127.0.0.1:8766/mcp`) for Claude Desktop, Cursor, etc.
 - 🔌 **WebSocket server** — Agents connect at `ws://127.0.0.1:8765`
 - 🤖 **Agent registration** — `agent/register` → stored in agents table
 - 📨 **Agent messages** — `message/send` → persisted and shown in real time
@@ -100,6 +101,36 @@ The example connects, fetches `#general`, registers a demo Agent, and sends a me
 
 ---
 
+## 🔗 MCP Protocol Compatibility
+
+Agent Anchor exposes an **MCP (Model Context Protocol) server** so AI tools (Claude Desktop, Cursor, etc.) can use it as an MCP server.
+
+**Endpoint:** `http://127.0.0.1:8766/mcp` (Streamable HTTP)
+
+**Tools:**
+
+| Tool | Description |
+|------|-------------|
+| `anchor_list_channels` | List all channels |
+| `anchor_list_agents` | List all registered agents |
+| `anchor_send_message` | Send a message to a channel (`channelId`, `content`) |
+
+**Claude Desktop config** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "agent-anchor": {
+      "url": "http://127.0.0.1:8766/mcp"
+    }
+  }
+}
+```
+
+> ⚠️ Start Agent Anchor (`pnpm run dev`) before connecting MCP clients.
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -108,7 +139,8 @@ agent-anchor/
 │   ├── main.ts         # Entry, BrowserWindow
 │   ├── db.ts           # SQLite (better-sqlite3)
 │   ├── ipc-handlers.ts # IPC handlers
-│   └── websocket-server.ts
+│   ├── websocket-server.ts
+│   └── mcp-server.ts
 ├── src/                # Renderer (React)
 │   ├── components/     # Sidebar, Channel, MessageList, etc.
 │   ├── stores/         # Zustand stores
@@ -128,6 +160,7 @@ agent-anchor/
 | Document | Description |
 |----------|-------------|
 | 📋 [Development Plan & Architecture](docs/PLAN.md) | Roadmap, phases, and design |
+| 🔗 [MCP Protocol Setup](docs/MCP.md) | Claude Desktop, Cursor MCP configuration |
 | ✅ [Preparation Checklist](docs/PREPARATION_CHECKLIST.md) | Setup and prerequisites |
 | 📜 [Project Constitution](.specify/memory/constitution.md) | Spec-Kit principles and constraints |
 | 🔧 [Cursor Config](.cursor/README.md) | Spec-Kit commands and rules |
