@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/Sidebar/Sidebar'
 import { ChannelHeader } from '@/components/Channel/ChannelHeader'
 import { MessageList } from '@/components/Channel/MessageList'
 import { MessageInput } from '@/components/Channel/MessageInput'
+import { ThreadPanel } from '@/components/Channel/ThreadPanel'
 import { useThemeStore } from '@/stores/themeStore'
 import { useChannels } from '@/hooks/useChannels'
 import { useUIStore } from '@/stores/uiStore'
@@ -40,6 +41,7 @@ function AutoSelectChannel() {
 }
 
 export default function App() {
+  const selectedThreadRootId = useUIStore((s) => s.selectedThreadRootId)
   return (
     <>
       <ThemeSync />
@@ -52,7 +54,13 @@ export default function App() {
           <MessageList />
           <MessageInput />
         </main>
-        <div className="w-0 lg:w-64 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0" />
+        {selectedThreadRootId ? (
+          <div className="w-64 lg:w-80 shrink-0">
+            <ThreadPanel />
+          </div>
+        ) : (
+          <div className="w-0 lg:w-64 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0 hidden lg:block" />
+        )}
       </div>
     </>
   )

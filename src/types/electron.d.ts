@@ -22,12 +22,14 @@ export interface Message {
   content: string
   timestamp: number
   thread_ts?: string
+  mentions?: string | null
 }
 
 export interface ElectronAPI {
   channels: {
     list: () => Promise<Channel[]>
     get: (id: string) => Promise<Channel | null>
+    getThreadCount: (channelId: string) => Promise<number>
   }
   agents: {
     list: () => Promise<Agent[]>
@@ -36,7 +38,9 @@ export interface ElectronAPI {
   }
   messages: {
     list: (channelId: string) => Promise<Message[]>
-    send: (channelId: string, content: string, threadTs?: string | null) => Promise<Message | { error: string }>
+    listByThread: (channelId: string, rootMessageId: string) => Promise<Message[]>
+    get: (id: string) => Promise<Message | null>
+    send: (channelId: string, content: string, threadTs?: string | null, mentions?: string[]) => Promise<Message | { error: string }>
     onInvalidated?: (callback: () => void) => void
   }
   sidebar?: {

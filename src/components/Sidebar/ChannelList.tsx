@@ -1,9 +1,11 @@
 import { useChannels } from '@/hooks/useChannels'
+import { useChannelThreadCounts } from '@/hooks/useChannelThreadCounts'
 import { useUIStore } from '@/stores/uiStore'
 import { EmptyState } from '@/components/Channel/EmptyState'
 
 export function ChannelList() {
   const { channels, loading } = useChannels()
+  const threadCounts = useChannelThreadCounts(channels.map((c) => c.id))
   const selectedChannelId = useUIStore((s) => s.selectedChannelId)
   const setSelectedChannel = useUIStore((s) => s.setSelectedChannel)
 
@@ -29,11 +31,16 @@ export function ChannelList() {
         <button
           key={ch.id}
           onClick={() => setSelectedChannel(ch.id)}
-          className={`w-full text-left px-2 py-1.5 rounded hover:bg-slate-700 transition-colors ${
+          className={`w-full text-left px-2 py-1.5 rounded hover:bg-slate-700 transition-colors flex items-center justify-between gap-1 ${
             selectedChannelId === ch.id ? 'bg-slate-700 text-white' : ''
           }`}
         >
-          <span className="truncate block">{ch.name}</span>
+          <span className="truncate flex-1">{ch.name}</span>
+          {(threadCounts[ch.id] ?? 0) > 0 && (
+            <span className="shrink-0 text-xs bg-slate-600 text-slate-200 px-1.5 py-0.5 rounded">
+              {threadCounts[ch.id]}
+            </span>
+          )}
         </button>
       ))}
     </div>
