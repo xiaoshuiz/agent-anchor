@@ -1,12 +1,21 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
+import { initDbAndHandlers } from './ipc-handlers'
+
+function getIconPath(): string {
+  const base = app.isPackaged ? join(app.getAppPath(), '..') : process.cwd()
+  return join(base, 'build/icon.png')
+}
 
 function createWindow(): void {
+  const preloadPath = join(__dirname, '../preload/preload.mjs')
+  const iconPath = getIconPath()
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: iconPath,
     webPreferences: {
-      preload: join(__dirname, 'preload.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -21,6 +30,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  initDbAndHandlers()
   createWindow()
 
   app.on('activate', () => {
@@ -31,6 +41,3 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
-
-// IPC handlers (placeholder for Phase 2)
-ipcMain.handle('ping', () => 'pong')
