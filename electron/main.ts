@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { initDbAndHandlers } from './ipc-handlers'
 import { startWebSocketServer } from './websocket-server'
+import { startMcpServer } from './mcp-server'
 
 function getIconPath(): string {
   const base = app.isPackaged ? join(app.getAppPath(), '..') : process.cwd()
@@ -44,6 +45,7 @@ function notifyAgentsRefresh(): void {
 app.whenReady().then(() => {
   initDbAndHandlers()
   startWebSocketServer(8765, { onNewMessage: notifyRendererRefresh, onAgentRegistered: notifyAgentsRefresh })
+  startMcpServer(8766, { onNewMessage: notifyRendererRefresh })
   createWindow()
 
   app.on('activate', () => {
