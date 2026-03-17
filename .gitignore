@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-electron/
 out/
+build/
 *.local
 
 # Spec-Kit output (constitution.md is committed)
