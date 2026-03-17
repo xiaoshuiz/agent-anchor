@@ -1,7 +1,6 @@
 # Feature Specification: Phase 1 - 基础框架与 UI 骨架
 
 **Feature Branch**: `001-phase1-ui-skeleton`  
-**Spec-Kit 规格**: `specs/001-phase1-ui-skeleton/spec.md`  
 **Created**: 2025-03-17  
 **Status**: Draft (已根据 Clarify 更新)  
 **Input**: 基于 docs/PLAN.md Phase 1 设计 + Clarify 反馈
