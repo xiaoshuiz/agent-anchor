@@ -102,9 +102,16 @@ agent-anchor/
 
 ## Phase 1: Design Artifacts
 
-- data-model.md: Channel, Agent, Message 表结构
+- data-model.md: Channel, Agent, Message, Thread 表结构
 - contracts/: IPC 契约（channels, agents, messages CRUD）
 - quickstart.md: 本地开发与构建步骤
+
+## Design Decisions (from Analyze)
+
+- **主题**: darkMode: 'class' + themeStore 监听 prefers-color-scheme
+- **侧边栏持久化**: electron-store
+- **threads 表**: Phase 1 建表，Thread 详情 UI Phase 2
+- **图标工具**: electron-icon-builder 或类似 npm 包
 
 ## Complexity Tracking
 

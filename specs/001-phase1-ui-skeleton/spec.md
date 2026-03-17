@@ -86,7 +86,7 @@
 
 1. **Given** 系统为浅色模式，**When** 应用启动，**Then** 应用为浅色主题
 2. **Given** 系统为深色模式，**When** 应用启动，**Then** 应用为深色主题
-3. **Given** 应用运行中，**When** 用户切换系统主题，**Then** 应用主题在合理时间内更新
+3. **Given** 应用运行中，**When** 用户切换系统主题，**Then** 应用主题在 2 秒内更新（见 SC-004）
 
 ---
 
@@ -173,7 +173,7 @@
 - **FR-006**: 消息气泡、时间戳、头像等交互 MUST 参考 Slack
 - **FR-007**: 应用 MUST 跟随系统主题（prefers-color-scheme）
 - **FR-008**: 侧边栏 MUST 支持折叠为图标栏，有专用折叠/展开按钮，状态持久化
-- **FR-009**: 应用 MUST 有符合 Anchor 概念的图标，应用于窗口与打包产物
+- **FR-009**: 应用 MUST 有符合 Anchor 概念的图标（含锚点/船锚意象），应用于窗口与打包产物；验收方式：人工确认
 - **FR-010**: 应用 MUST 有全局 Error Boundary，捕获错误时显示 fallback
 - **FR-011**: 合入 main 后，GitHub Actions MUST 自动构建并发布 Release
 

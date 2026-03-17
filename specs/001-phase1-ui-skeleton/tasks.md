@@ -112,9 +112,9 @@
 
 **Independent Test**: Toggle system dark/light → app theme updates
 
-- [ ] T034 [P] [US5] Add dark mode class to tailwind.config.js (darkMode: 'class' or 'media')
-- [ ] T035 [US5] Create src/stores/themeStore.ts: read prefers-color-scheme, apply to document
-- [ ] T036 [US5] Apply theme in App.tsx or root: add/remove 'dark' class on html
+- [ ] T034 [P] [US5] Add darkMode: 'class' to tailwind.config.js
+- [ ] T035 [US5] Create src/stores/themeStore.ts: listen prefers-color-scheme, sync to 'dark' class on html
+- [ ] T036 [US5] Apply theme in App.tsx or root: themeStore controls add/remove 'dark' class on document.documentElement
 - [ ] T037 [US5] Ensure all components use Tailwind dark: variants
 
 **Checkpoint**: US5 complete – theme follows system
@@ -129,7 +129,7 @@
 
 - [ ] T038 [US6] Implement CollapseButton.tsx: toggle icon, onClick handler
 - [ ] T039 [US6] Add sidebarCollapsed to uiStore (Zustand)
-- [ ] T040 [US6] Persist sidebarCollapsed via electron-store or localStorage
+- [ ] T040 [US6] Persist sidebarCollapsed via electron-store (main process or renderer)
 - [ ] T041 [US6] Update Sidebar.tsx: conditional width (expanded ~240px, collapsed ~56px)
 - [ ] T042 [US6] Load persisted collapse state on app init
 
@@ -144,7 +144,7 @@
 **Independent Test**: Window/Dock shows icon; built .app has icon
 
 - [ ] T043 [P] [US7] Create src/assets/icons/anchor.svg (anchor symbol)
-- [ ] T044 [US7] Generate resources/icon.icns from anchor.svg (e.g. electron-icon-builder)
+- [ ] T044 [US7] Generate resources/icon.icns from anchor.svg using electron-icon-builder or similar npm package
 - [ ] T045 [US7] Configure electron/main.ts: set icon for BrowserWindow
 - [ ] T046 [US7] Configure package.json build: mac icon path for electron-builder
 
@@ -188,7 +188,7 @@
 
 **Purpose**: Final integration and validation
 
-- [ ] T057 Run quickstart.md validation: pnpm install, pnpm run dev, pnpm run build
+- [ ] T057 Run quickstart.md validation: pnpm install, pnpm run dev, pnpm run build; verify SC-001 (layout visible within 3s), SC-002 (100 messages scroll smoothly)
 - [ ] T058 Verify all checklists in specs/001-phase1-ui-skeleton/checklists/ (requirements, ux)
 - [ ] T059 Code cleanup: remove unused imports, ensure TypeScript strict passes
 
