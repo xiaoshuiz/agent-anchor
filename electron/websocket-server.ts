@@ -5,6 +5,35 @@ import { insertMessage, insertAgent, getChannelById } from './db'
 
 const DEFAULT_PORT = 8765
 
+const agentSockets = new Map<string, WebSocket>()
+
+export interface MentionMessage {
+  messageId: string
+  channelId: string
+  channelName: string
+  fromType: string
+  fromId: string
+  content: string
+  mentions: string[]
+  threadTs: string | null
+  timestamp: number
+}
+
+export function pushMentionToAgents(msg: MentionMessage): void {
+  for (const agentId of msg.mentions) {
+    const ws = agentSockets.get(agentId)
+    if (ws && ws.readyState === 1) {
+      ws.send(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'message/mention',
+          params: msg,
+        })
+      )
+    }
+  }
+}
+
 interface JsonRpcRequest {
   jsonrpc?: string
   method?: string
@@ -26,20 +55,45 @@ function sendResponse(ws: WebSocket, id: number | string | undefined, result?: u
   ws.send(JSON.stringify(msg))
 }
 
+const agentConnections = new Map<string, WebSocket>()
+
+export function getAgentStatusMap(): Record<string, 'online' | 'offline'> {
+  const agents = new Set(agentConnections.keys())
+  const status: Record<string, 'online' | 'offline'> = {}
+  for (const id of agents) {
+    status[id] = 'online'
+  }
+  return status
+}
+
+export function getOnlineAgentIds(): Set<string> {
+  return new Set(agentConnections.keys())
+}
+
 export interface WebSocketServerCallbacks {
-  onNewMessage?: () => void
+  onNewMessage?: (channelId: string) => void
   onAgentRegistered?: () => void
+  onAgentStatusChanged?: () => void
 }
 
 export function startWebSocketServer(
   port: number = DEFAULT_PORT,
   callbacks?: WebSocketServerCallbacks
 ): WebSocketServer {
-  const { onNewMessage, onAgentRegistered } = callbacks ?? {}
+  const { onNewMessage, onAgentRegistered, onAgentStatusChanged } = callbacks ?? {}
   const wss = new WebSocketServer({ port })
   console.log(`[Agent Anchor] WebSocket server listening on ws://127.0.0.1:${port}`)
 
   wss.on('connection', (ws: WebSocket) => {
+    let boundAgentId: string | null = null
+
+    ws.on('close', () => {
+      if (boundAgentId) {
+        agentConnections.delete(boundAgentId)
+        onAgentStatusChanged?.()
+      }
+    })
+
     ws.on('message', (data: Buffer | string) => {
       let req: JsonRpcRequest
       try {
@@ -80,6 +134,8 @@ export function startWebSocketServer(
           return
         }
         try {
+          agentSockets.set(agentId, ws)
+          ws.on('close', () => agentSockets.delete(agentId))
           const agent = insertAgent(db, {
             id: agentId,
             name,
@@ -87,8 +143,11 @@ export function startWebSocketServer(
             avatar: (params.avatar as string) ?? null,
             capabilities: params.capabilities as string[] | string | null ?? null,
           })
+          boundAgentId = agentId
+          agentConnections.set(agentId, ws)
           sendResponse(ws, id, { id: agent.id })
           onAgentRegistered?.()
+          onAgentStatusChanged?.()
         } catch (e) {
           sendResponse(ws, id, undefined, { code: -32603, message: String(e) })
         }
@@ -99,6 +158,7 @@ export function startWebSocketServer(
         const channelId = params.channelId as string
         const content = (params.content as string)?.trim?.()
         const agentId = params.agentId as string
+        const mentions = (params.mentions as string[]) ?? []
         if (!channelId || !content || !agentId) {
           sendResponse(ws, id, undefined, { code: -32602, message: 'Invalid params: agentId, channelId and content required' })
           return
@@ -115,9 +175,23 @@ export function startWebSocketServer(
             fromId: agentId,
             content,
             threadTs: (params.threadTs as string) ?? null,
+            mentions: mentions.length > 0 ? mentions : null,
           })
           sendResponse(ws, id, { id: msg.id, timestamp: msg.timestamp })
-          onNewMessage?.()
+          onNewMessage?.(channelId)
+          if (mentions.length > 0) {
+            pushMentionToAgents({
+              messageId: msg.id,
+              channelId,
+              channelName: channel.name,
+              fromType: 'agent',
+              fromId: agentId,
+              content,
+              mentions,
+              threadTs: msg.thread_ts,
+              timestamp: msg.timestamp,
+            })
+          }
         } catch (e) {
           sendResponse(ws, id, undefined, { code: -32603, message: String(e) })
         }
