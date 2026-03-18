@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { TitleBar } from '@/components/TitleBar/TitleBar'
 import { Sidebar } from '@/components/Sidebar/Sidebar'
 import { ChannelHeader } from '@/components/Channel/ChannelHeader'
 import { MessageList } from '@/components/Channel/MessageList'
@@ -74,8 +75,10 @@ export default function App() {
       <DarkClassSync />
       <AutoSelectChannel />
       <UnreadSync />
-      <div className="flex h-screen bg-slate-100 dark:bg-slate-900">
-        <Sidebar />
+      <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-900">
+        <TitleBar />
+        <div className="flex flex-1 min-h-0">
+          <Sidebar />
         <main className="flex-1 flex flex-col min-w-0">
           <ChannelHeader />
           <MainContent />
@@ -87,6 +90,7 @@ export default function App() {
         ) : (
           <div className="w-0 lg:w-64 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0 hidden lg:block" />
         )}
+        </div>
       </div>
     </>
   )

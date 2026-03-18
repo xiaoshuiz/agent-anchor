@@ -20,6 +20,8 @@ function createWindow(): void {
     width: 1200,
     height: 800,
     icon: iconPath,
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : undefined,
+    trafficLightPosition: process.platform === 'darwin' ? { x: 12, y: 14 } : undefined,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
