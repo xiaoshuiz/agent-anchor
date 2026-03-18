@@ -12,10 +12,38 @@ import {
   getThreadCountByChannel,
   getMessageById,
   getDb,
+  getUnreadCounts,
+  markChannelRead,
+  incrementUnread,
+  searchMessages,
 } from './db'
-import { pushMentionToAgents } from './websocket-server'
+import { pushMentionToAgents, getOnlineAgentIds } from './websocket-server'
 
 const uiStore = new Store<{ sidebarCollapsed?: boolean }>({ name: 'ui' })
+
+let currentChannelId: string | null = null
+
+export function getCurrentChannelId(): string | null {
+  return currentChannelId
+}
+
+export function setCurrentChannelId(id: string | null): void {
+  currentChannelId = id
+}
+
+let unreadInvalidateSender: (() => void) | null = null
+
+export function registerUnreadInvalidateSender(sender: () => void): void {
+  unreadInvalidateSender = sender
+}
+
+export function handleNewMessageFromAgent(channelId: string): void {
+  if (channelId === currentChannelId) return
+  const database = getDb()
+  if (!database) return
+  incrementUnread(database, channelId)
+  unreadInvalidateSender?.()
+}
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('channels:list', async () => {
@@ -117,6 +145,41 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('sidebar:getCollapsed', () => uiStore.get('sidebarCollapsed', false))
   ipcMain.handle('sidebar:setCollapsed', (_, collapsed: boolean) => {
     uiStore.set('sidebarCollapsed', collapsed)
+  })
+
+  ipcMain.handle('app:setCurrentChannel', (_, channelId: string | null) => {
+    setCurrentChannelId(channelId)
+  })
+
+  ipcMain.handle('unread:get', async () => {
+    const database = getDb()
+    if (!database) return {}
+    return getUnreadCounts(database)
+  })
+
+  ipcMain.handle('unread:markRead', async (_, channelId: string) => {
+    const database = getDb()
+    if (!database) return
+    markChannelRead(database, channelId)
+    unreadInvalidateSender?.()
+  })
+
+  ipcMain.handle('search:query', async (_, params: { keyword: string; channelId?: string; fromId?: string }) => {
+    const database = getDb()
+    if (!database) return []
+    return searchMessages(database, params)
+  })
+
+  ipcMain.handle('agents:getStatus', async () => {
+    const online = getOnlineAgentIds()
+    const database = getDb()
+    if (!database) return {}
+    const agents = agentsList(database)
+    const status: Record<string, 'online' | 'offline'> = {}
+    for (const a of agents) {
+      status[a.id] = online.has(a.id) ? 'online' : 'offline'
+    }
+    return status
   })
 }
 
