@@ -21,10 +21,7 @@ export function Sidebar() {
         collapsed ? 'w-14' : 'w-60'
       }`}
     >
-      <div className="p-4 border-b border-slate-700 flex items-center justify-between shrink-0">
-        {!collapsed && (
-          <h1 className="font-semibold text-lg truncate">Agent Anchor</h1>
-        )}
+      <div className="p-2 border-b border-slate-700 flex items-center justify-end shrink-0">
         <CollapseButton />
       </div>
       <nav className="flex-1 overflow-y-auto p-2">

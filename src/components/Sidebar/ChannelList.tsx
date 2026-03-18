@@ -22,16 +22,6 @@ export function ChannelList() {
     )
   }
 
-  if (channelChannels.length === 0) {
-    return (
-      <EmptyState
-        title="No channels"
-        description="Start by creating one"
-        variant="compact"
-      />
-    )
-  }
-
   return (
     <div className="space-y-0.5">
       <button
@@ -42,7 +32,13 @@ export function ChannelList() {
         <Plus className="w-4 h-4 shrink-0" />
         Create channel
       </button>
-      {channelChannels.map((ch) => {
+      {channelChannels.length === 0 ? (
+        <EmptyState
+          title="No channels"
+          description="Click above to create one"
+          variant="compact"
+        />
+      ) : channelChannels.map((ch) => {
         const unreadCount = unread[ch.id] ?? 0
         const threadCount = threadCounts[ch.id] ?? 0
         const isSelected = selectedChannelId === ch.id

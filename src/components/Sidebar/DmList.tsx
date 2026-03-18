@@ -33,12 +33,6 @@ export function DmList() {
     )
   }
 
-  if (agents.length === 0) {
-    return (
-      <div className="px-2 py-2 text-slate-500 text-sm">No agents. Add one to start a DM.</div>
-    )
-  }
-
   return (
     <div className="space-y-0.5">
       <button
@@ -49,7 +43,9 @@ export function DmList() {
         <Plus className="w-4 h-4 shrink-0" />
         Add Agent
       </button>
-      {agents.map((agent) => (
+      {agents.length === 0 ? (
+        <div className="px-2 py-2 text-slate-500 text-sm">No agents yet. Click above to add one.</div>
+      ) : agents.map((agent) => (
         <button
           key={agent.id}
           type="button"
