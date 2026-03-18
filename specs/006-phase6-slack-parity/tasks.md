@@ -6,8 +6,8 @@
 - [x] T002: 侧边栏 Channel 项使用 # 图标，尺寸 16px (w-4 h-4)
 - [x] T003: 消息头像改为 w-7 (28px)，与 Slack 一致
 - [x] T004: 侧边栏列表项使用 rounded-md
-- [ ] T005: 卡片、面板使用 rounded-lg，间距调整
-- [ ] T006: 配色：选中态使用紫色/蓝色强调（参考 Slack）
+- [x] T005: 卡片、面板使用 rounded-lg，间距调整
+- [x] T006: 配色：选中态使用紫色强调（参考 Slack）
 
 ## Phase 6.2 - 应用内创建 Agent (US2)
 
@@ -44,5 +44,5 @@
 
 ## Phase 6.6 - Polish
 
-- [ ] T028: 端到端验证：创建 Agent → 创建 Channel → 添加 Agent → 发消息
-- [ ] T029: 文档更新：README 补充创建 Agent/Channel 说明
+- [x] T028: 端到端验证：创建 Agent → 创建 Channel → 添加 Agent → 发消息
+- [x] T029: 文档更新：README 补充创建 Agent/Channel 说明

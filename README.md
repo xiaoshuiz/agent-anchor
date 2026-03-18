@@ -70,6 +70,7 @@ pnpm run build
 
 ### ✅ Phase 2 — WebSocket & Agent SDK
 - 📤 **User messages** — Send from the app, persisted in SQLite
+- ➕ **Create Agent/Channel** — Add agents and channels in-app; add agents to channels when creating
 - 🔗 **MCP compatibility** — Expose Agent Anchor as MCP server (`http://127.0.0.1:8766/mcp`) for Claude Desktop, Cursor, etc.
 - 🔌 **WebSocket server** — Agents connect at `ws://127.0.0.1:8765`
 - 🤖 **Agent registration** — `agent/register` → stored in agents table
@@ -100,6 +101,31 @@ node examples/agent-node/index.js
 ```
 
 The example connects, fetches `#general`, registers a demo Agent, and sends a message — visible in the app immediately.
+
+---
+
+## ➕ Creating Agents & Channels
+
+You can create Agents and Channels directly in the app (no WebSocket required for creation):
+
+### Create Agent
+
+1. In the **Direct Messages** section, click **+ Add Agent**
+2. Fill in **ID** (e.g. `agent-coder`), **Name** (e.g. `Coder`), optional description and capabilities
+3. Click **Create** — the Agent appears in the DM list (offline until it connects via WebSocket)
+
+### Create Channel
+
+1. In the **Channels** section, click **+ Create channel**
+2. Enter channel name (e.g. `coding` or `#coding`), optional description
+3. Optionally select Agents to add to the channel
+4. Click **Create** — the channel appears in the sidebar
+
+### Direct Messages (DM)
+
+- Click any Agent in the **Direct Messages** section to open a private chat
+- A DM is created automatically on first open
+- Messages in DMs work the same as in channels
 
 ---
 
