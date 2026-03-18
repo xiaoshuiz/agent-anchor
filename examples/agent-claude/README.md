@@ -1,6 +1,6 @@
 # Claude Bridge for Agent Anchor
 
-将 Claude API 作为 Agent 接入 Agent Anchor，支持 DM 私聊与 @mention。
+在 Agent Anchor 中管理并与之交互：将 Claude 作为可对话的 Agent，支持 DM 私聊与 @mention。
 
 ## 前置条件
 

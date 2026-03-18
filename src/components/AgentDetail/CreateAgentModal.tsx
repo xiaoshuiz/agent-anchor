@@ -1,8 +1,7 @@
 import { useState } from 'react'
 
 const PRESETS = [
-  { id: 'claude', name: 'Claude', description: 'Claude via Anthropic API' },
-  { id: 'cursor', name: 'Cursor', description: 'Cursor IDE agent' },
+  { id: 'claude', name: 'Claude', description: '在 app 中与 Claude 对话' },
 ] as const
 
 interface CreateAgentModalProps {
@@ -97,11 +96,6 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
                 <code className="block truncate">cd examples/agent-claude && pnpm install && ANTHROPIC_API_KEY=your_key node index.js</code>
                 <p className="mt-2 text-xs text-slate-500">Get key at console.anthropic.com</p>
               </div>
-            )}
-            {createdAgentId === 'cursor' && (
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Cursor bridge example coming. For now use the Node SDK (examples/agent-node) with a custom script.
-              </p>
             )}
             <button
               type="button"
