@@ -23,14 +23,14 @@ export function MessageBubble({ message, showReplyButton = true }: MessageBubble
         }`}
       >
         {!isUser && (
-          <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm shrink-0">
+          <div className="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-white text-xs shrink-0">
             {message.from_id.charAt(0).toUpperCase()}
           </div>
         )}
         <div
           className={`rounded-lg px-3 py-2 ${
             isUser
-              ? 'bg-blue-500 text-white'
+              ? 'bg-violet-600 text-white'
               : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
           }`}
         >

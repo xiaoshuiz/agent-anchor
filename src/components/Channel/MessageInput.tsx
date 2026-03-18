@@ -130,7 +130,7 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
             placeholder={
               threadTs ? 'Reply in thread...' : 'Type a message... (use @ to mention)'
             }
-            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
           {showMentionPopup && (
             <div

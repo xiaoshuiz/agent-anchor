@@ -3,7 +3,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 
-const DB_VERSION = 3
+const DB_VERSION = 5
 
 let db: Database.Database | null = null
 
@@ -84,6 +84,32 @@ function runMigrations(database: Database.Database): void {
       );
       CREATE INDEX IF NOT EXISTS idx_channel_unread_count ON channel_unread(count) WHERE count > 0;
     `)
+    database.pragma('user_version = 3')
+  }
+
+  if (current >= 3 && current < 4) {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS channel_members (
+        channel_id TEXT NOT NULL REFERENCES channels(id),
+        agent_id TEXT NOT NULL REFERENCES agents(id),
+        PRIMARY KEY (channel_id, agent_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_channel_members_channel ON channel_members(channel_id);
+    `)
+    database.pragma('user_version = 4')
+  }
+
+  if (current >= 4 && current < 5) {
+    try {
+      database.exec('ALTER TABLE channels ADD COLUMN type TEXT DEFAULT "channel"')
+    } catch {
+      // Column may already exist
+    }
+    try {
+      database.exec('ALTER TABLE channels ADD COLUMN dm_agent_id TEXT REFERENCES agents(id)')
+    } catch {
+      // Column may already exist
+    }
     database.pragma(`user_version = ${DB_VERSION}`)
   }
 }
@@ -104,6 +130,8 @@ export interface Channel {
   name: string
   description: string | null
   created_at: number
+  type?: 'channel' | 'dm'
+  dm_agent_id?: string | null
 }
 
 export interface Agent {
@@ -127,9 +155,17 @@ export interface Message {
 }
 
 export function channelsList(database: Database.Database): Channel[] {
-  return database.prepare(
-    'SELECT id, name, description, created_at FROM channels ORDER BY created_at ASC'
-  ).all() as Channel[]
+  const rows = database.prepare(
+    'SELECT id, name, description, created_at, type, dm_agent_id FROM channels ORDER BY created_at ASC'
+  ).all() as Array<Channel & { type?: string; dm_agent_id?: string | null }>
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    created_at: r.created_at,
+    type: (r.type as 'channel' | 'dm') ?? 'channel',
+    dm_agent_id: r.dm_agent_id ?? null,
+  }))
 }
 
 export function agentsList(database: Database.Database): Agent[] {
@@ -242,7 +278,87 @@ export function insertAgent(
 }
 
 export function getChannelById(database: Database.Database, id: string): Channel | null {
-  return (database.prepare('SELECT id, name, description, created_at FROM channels WHERE id = ?').get(id) as Channel) ?? null
+  const row = database.prepare(
+    'SELECT id, name, description, created_at, type, dm_agent_id FROM channels WHERE id = ?'
+  ).get(id) as (Channel & { type?: string; dm_agent_id?: string | null }) | undefined
+  if (!row) return null
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    created_at: row.created_at,
+    type: (row.type as 'channel' | 'dm') ?? 'channel',
+    dm_agent_id: row.dm_agent_id ?? null,
+  }
+}
+
+export function insertChannel(
+  database: Database.Database,
+  params: { name: string; description?: string | null }
+): Channel {
+  const id = randomUUID()
+  const now = Math.floor(Date.now() / 1000)
+  database.prepare(
+    'INSERT INTO channels (id, name, description, created_at) VALUES (?, ?, ?, ?)'
+  ).run(id, params.name, params.description ?? null, now)
+  return {
+    id,
+    name: params.name,
+    description: params.description ?? null,
+    created_at: now,
+  }
+}
+
+export function insertChannelMembers(
+  database: Database.Database,
+  channelId: string,
+  agentIds: string[]
+): void {
+  const stmt = database.prepare(
+    'INSERT OR IGNORE INTO channel_members (channel_id, agent_id) VALUES (?, ?)'
+  )
+  for (const agentId of agentIds) {
+    stmt.run(channelId, agentId)
+  }
+}
+
+export function getChannelMembers(database: Database.Database, channelId: string): string[] {
+  const rows = database.prepare(
+    'SELECT agent_id FROM channel_members WHERE channel_id = ?'
+  ).all(channelId) as { agent_id: string }[]
+  return rows.map((r) => r.agent_id)
+}
+
+export function getOrCreateDm(database: Database.Database, agentId: string): Channel {
+  const existing = database.prepare(
+    'SELECT id, name, description, created_at, type, dm_agent_id FROM channels WHERE type = ? AND dm_agent_id = ?'
+  ).get('dm', agentId) as (Channel & { type?: string; dm_agent_id?: string | null }) | undefined
+  if (existing) {
+    return {
+      id: existing.id,
+      name: existing.name,
+      description: existing.description,
+      created_at: existing.created_at,
+      type: 'dm',
+      dm_agent_id: agentId,
+    }
+  }
+  const agent = database.prepare('SELECT name FROM agents WHERE id = ?').get(agentId) as { name: string } | undefined
+  const name = agent ? `DM with ${agent.name}` : `DM with ${agentId}`
+  const id = randomUUID()
+  const now = Math.floor(Date.now() / 1000)
+  database.prepare(
+    'INSERT INTO channels (id, name, description, created_at, type, dm_agent_id) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(id, name, null, now, 'dm', agentId)
+  return { id, name, description: null, created_at: now, type: 'dm', dm_agent_id: agentId }
+}
+
+export function getMessagesMentioningUser(database: Database.Database): Message[] {
+  const rows = database.prepare(
+    `SELECT id, channel_id, from_type, from_id, content, timestamp, thread_ts, mentions
+     FROM messages WHERE mentions IS NOT NULL AND mentions LIKE ? ORDER BY timestamp DESC LIMIT 100`
+  ).all('%"user"%') as Message[]
+  return rows
 }
 
 export function getMessageById(database: Database.Database, id: string): Message | null {

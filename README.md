@@ -40,6 +40,8 @@ pnpm run build
 
 > 💡 **Tip:** If Electron fails after first install, run `node node_modules/electron/install.js` to manually install the binary.
 
+> ⚠️ **macOS 用户**：若从 GitHub Releases 下载的 `.dmg` 安装后提示「已损坏，无法打开」，请在终端执行 `xattr -cr /Applications/Agent\ Anchor.app` 移除隔离属性，或右键应用选择「打开」。详见 [故障排除](docs/TROUBLESHOOTING.md)。
+
 ---
 
 ## 📦 Tech Stack
@@ -68,6 +70,7 @@ pnpm run build
 
 ### ✅ Phase 2 — WebSocket & Agent SDK
 - 📤 **User messages** — Send from the app, persisted in SQLite
+- ➕ **Create Agent/Channel** — Add agents and channels in-app; add agents to channels when creating
 - 🔗 **MCP compatibility** — Expose Agent Anchor as MCP server (`http://127.0.0.1:8766/mcp`) for Claude Desktop, Cursor, etc.
 - 🔌 **WebSocket server** — Agents connect at `ws://127.0.0.1:8765`
 - 🤖 **Agent registration** — `agent/register` → stored in agents table
@@ -98,6 +101,31 @@ node examples/agent-node/index.js
 ```
 
 The example connects, fetches `#general`, registers a demo Agent, and sends a message — visible in the app immediately.
+
+---
+
+## ➕ Creating Agents & Channels
+
+You can create Agents and Channels directly in the app (no WebSocket required for creation):
+
+### Create Agent
+
+1. In the **Direct Messages** section, click **+ Add Agent**
+2. Fill in **ID** (e.g. `agent-coder`), **Name** (e.g. `Coder`), optional description and capabilities
+3. Click **Create** — the Agent appears in the DM list (offline until it connects via WebSocket)
+
+### Create Channel
+
+1. In the **Channels** section, click **+ Create channel**
+2. Enter channel name (e.g. `coding` or `#coding`), optional description
+3. Optionally select Agents to add to the channel
+4. Click **Create** — the channel appears in the sidebar
+
+### Direct Messages (DM)
+
+- Click any Agent in the **Direct Messages** section to open a private chat
+- A DM is created automatically on first open
+- Messages in DMs work the same as in channels
 
 ---
 
@@ -161,6 +189,7 @@ agent-anchor/
 |----------|-------------|
 | 📋 [Development Plan & Architecture](docs/PLAN.md) | Roadmap, phases, and design |
 | 🔗 [MCP Protocol Setup](docs/MCP.md) | Claude Desktop, Cursor MCP configuration |
+| 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md) | macOS「已损坏」等常见问题 |
 | ✅ [Preparation Checklist](docs/PREPARATION_CHECKLIST.md) | Setup and prerequisites |
 | 📜 [Project Constitution](.specify/memory/constitution.md) | Spec-Kit principles and constraints |
 | 🔧 [Cursor Config](.cursor/README.md) | Spec-Kit commands and rules |

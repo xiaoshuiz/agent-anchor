@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Notification } from 'electron'
 import { join } from 'path'
-import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, getCurrentChannelId } from './ipc-handlers'
+import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, registerAgentsInvalidateSender, getCurrentChannelId } from './ipc-handlers'
 import { startWebSocketServer } from './websocket-server'
 import { startMcpServer } from './mcp-server'
 import { getDb } from './db'
@@ -52,15 +52,20 @@ function notifyAgentStatusRefresh(): void {
   mainWindow?.webContents?.send('agents:statusChanged')
 }
 
-function onNewMessage(channelId: string): void {
+function onNewMessage(channelId: string, mentions?: string[]): void {
   notifyRendererRefresh()
   handleNewMessageFromAgent(channelId)
-  if (mainWindow && !mainWindow.isFocused() && channelId !== getCurrentChannelId()) {
+  const isMentioned = mentions?.includes('user') ?? false
+  const shouldNotify =
+    mainWindow &&
+    (!mainWindow.isFocused() || isMentioned) &&
+    (channelId !== getCurrentChannelId() || isMentioned)
+  if (shouldNotify) {
     const db = getDb()
     if (db) {
       const ch = getChannelById(db, channelId)
       const title = ch ? ch.name : 'New message'
-      const body = 'You have a new message'
+      const body = isMentioned ? 'Someone mentioned you' : 'You have a new message'
       new Notification({ title, body }).show()
     }
   }
@@ -69,6 +74,7 @@ function onNewMessage(channelId: string): void {
 app.whenReady().then(() => {
   initDbAndHandlers()
   registerUnreadInvalidateSender(notifyUnreadRefresh)
+  registerAgentsInvalidateSender(notifyAgentsRefresh)
   startWebSocketServer(8765, {
     onNewMessage,
     onAgentRegistered: notifyAgentsRefresh,

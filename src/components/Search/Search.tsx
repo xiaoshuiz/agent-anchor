@@ -62,13 +62,13 @@ export function Search({ onClose }: SearchProps) {
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search messages..."
-              className="flex-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
               autoFocus
             />
             <button
               type="button"
               onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
             >
               Search
             </button>
