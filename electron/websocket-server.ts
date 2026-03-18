@@ -34,6 +34,29 @@ export function pushMentionToAgents(msg: MentionMessage): void {
   }
 }
 
+export interface DmMessagePayload {
+  messageId: string
+  channelId: string
+  channelName: string
+  fromType: string
+  fromId: string
+  content: string
+  timestamp: number
+}
+
+export function pushDmToAgent(agentId: string, msg: DmMessagePayload): void {
+  const ws = agentSockets.get(agentId)
+  if (ws && ws.readyState === 1) {
+    ws.send(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'message/dm',
+        params: msg,
+      })
+    )
+  }
+}
+
 interface JsonRpcRequest {
   jsonrpc?: string
   method?: string

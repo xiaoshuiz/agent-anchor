@@ -22,7 +22,7 @@ import {
   incrementUnread,
   searchMessages,
 } from './db'
-import { pushMentionToAgents, getOnlineAgentIds } from './websocket-server'
+import { pushMentionToAgents, pushDmToAgent, getOnlineAgentIds } from './websocket-server'
 
 const uiStore = new Store<{ sidebarCollapsed?: boolean }>({ name: 'ui' })
 
@@ -206,6 +206,18 @@ export function registerIpcHandlers(): void {
           threadTs: threadTs ?? null,
           mentions: mentions ?? null,
         })
+        const ch = channel as { type?: string; dm_agent_id?: string }
+        if (ch.type === 'dm' && ch.dm_agent_id) {
+          pushDmToAgent(ch.dm_agent_id, {
+            messageId: msg.id,
+            channelId,
+            channelName: channel.name,
+            fromType: 'user',
+            fromId: 'user',
+            content: trimmed,
+            timestamp: msg.timestamp,
+          })
+        }
         const mentionIds = mentions && mentions.length > 0 ? mentions : []
         if (mentionIds.length > 0) {
           pushMentionToAgents({

@@ -127,6 +127,13 @@ You can create Agents and Channels directly in the app (no WebSocket required fo
 - A DM is created automatically on first open
 - Messages in DMs work the same as in channels
 
+### Connect Claude as Agent
+
+1. Click **+ Add Agent**, then click **Claude** (or manually set ID=`claude`, Name=`Claude`)
+2. Create the agent
+3. Run the Claude bridge: `cd examples/agent-claude && pnpm install && ANTHROPIC_API_KEY=your_key node index.js`
+4. Claude appears online; open a DM or @Claude in any channel to chat
+
 ---
 
 ## 🔗 MCP Protocol Compatibility

@@ -1,5 +1,10 @@
 import { useState } from 'react'
 
+const PRESETS = [
+  { id: 'claude', name: 'Claude', description: 'Claude via Anthropic API' },
+  { id: 'cursor', name: 'Cursor', description: 'Cursor IDE agent' },
+] as const
+
 interface CreateAgentModalProps {
   onClose: () => void
   onCreated: () => void
@@ -12,6 +17,8 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
   const [capabilities, setCapabilities] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showBridgeHint, setShowBridgeHint] = useState(false)
+  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +49,13 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
         return
       }
       onCreated()
-      onClose()
+      const isPreset = PRESETS.some((p) => p.id === trimmedId)
+      if (isPreset) {
+        setCreatedAgentId(trimmedId)
+        setShowBridgeHint(true)
+      } else {
+        onClose()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -66,14 +79,57 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => { setShowBridgeHint(false); onClose() }}
             className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
+        {showBridgeHint && createdAgentId ? (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Agent <strong>{createdAgentId}</strong> created. To connect it:
+            </p>
+            {createdAgentId === 'claude' && (
+              <div className="rounded-lg bg-slate-100 dark:bg-slate-700 p-3 text-sm font-mono text-slate-800 dark:text-slate-200">
+                <p className="font-medium mb-1">Run Claude bridge:</p>
+                <code className="block truncate">cd examples/agent-claude && pnpm install && ANTHROPIC_API_KEY=your_key node index.js</code>
+                <p className="mt-2 text-xs text-slate-500">Get key at console.anthropic.com</p>
+              </div>
+            )}
+            {createdAgentId === 'cursor' && (
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Cursor bridge example coming. For now use the Node SDK (examples/agent-node) with a custom script.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
+              Quick add
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => { setId(p.id); setName(p.name); setDescription(p.description) }}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm"
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
               ID
@@ -142,6 +198,7 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   )
