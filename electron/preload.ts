@@ -4,11 +4,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   channels: {
     list: () => ipcRenderer.invoke('channels:list'),
     get: (id: string) => ipcRenderer.invoke('channels:get', id),
+    getThreadCount: (channelId: string) => ipcRenderer.invoke('channels:getThreadCount', channelId),
   },
   messages: {
     list: (channelId: string) => ipcRenderer.invoke('messages:list', channelId),
-    send: (channelId: string, content: string, threadTs?: string | null) =>
-      ipcRenderer.invoke('messages:send', channelId, content, threadTs),
+    listByThread: (channelId: string, rootMessageId: string) =>
+      ipcRenderer.invoke('messages:listByThread', channelId, rootMessageId),
+    get: (id: string) => ipcRenderer.invoke('messages:get', id),
+    send: (channelId: string, content: string, threadTs?: string | null, mentions?: string[]) =>
+      ipcRenderer.invoke('messages:send', channelId, content, threadTs, mentions),
     onInvalidated: (callback: () => void) => {
       ipcRenderer.on('messages:invalidated', callback)
     },

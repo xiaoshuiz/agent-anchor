@@ -3,7 +3,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let db: Database.Database | null = null
 
@@ -60,6 +60,15 @@ function runMigrations(database: Database.Database): void {
     `)
     database.pragma(`user_version = ${DB_VERSION}`)
   }
+
+  if (current >= 1 && current < 2) {
+    try {
+      database.exec('ALTER TABLE messages ADD COLUMN mentions TEXT')
+    } catch {
+      // Column may already exist
+    }
+    database.pragma('user_version = 2')
+  }
 }
 
 export function seedGeneralIfEmpty(database: Database.Database): void {
@@ -97,6 +106,7 @@ export interface Message {
   content: string
   timestamp: number
   thread_ts: string | null
+  mentions: string | null
 }
 
 export function channelsList(database: Database.Database): Channel[] {
@@ -113,9 +123,32 @@ export function agentsList(database: Database.Database): Agent[] {
 
 export function messagesListByChannel(database: Database.Database, channelId: string): Message[] {
   return database.prepare(
-    `SELECT id, channel_id, from_type, from_id, content, timestamp, thread_ts
+    `SELECT id, channel_id, from_type, from_id, content, timestamp, thread_ts, mentions
      FROM messages WHERE channel_id = ? ORDER BY timestamp ASC`
   ).all(channelId) as Message[]
+}
+
+export function messagesListByThread(
+  database: Database.Database,
+  channelId: string,
+  rootMessageId: string
+): Message[] {
+  return database.prepare(
+    `SELECT id, channel_id, from_type, from_id, content, timestamp, thread_ts, mentions
+     FROM messages WHERE channel_id = ? AND thread_ts = ? ORDER BY timestamp ASC`
+  ).all(channelId, rootMessageId) as Message[]
+}
+
+export function getThreadCountByChannel(database: Database.Database, channelId: string): number {
+  const row = database
+    .prepare(
+      `SELECT COUNT(*) as c FROM (
+        SELECT DISTINCT thread_ts FROM messages
+        WHERE channel_id = ? AND thread_ts IS NOT NULL
+      )`
+    )
+    .get(channelId) as { c: number }
+  return row?.c ?? 0
 }
 
 export function insertMessage(
@@ -126,14 +159,19 @@ export function insertMessage(
     fromId: string
     content: string
     threadTs?: string | null
+    mentions?: string[] | null
   }
 ): Message {
   const id = randomUUID()
   const ts = Date.now()
+  const mentionsStr =
+    params.mentions && params.mentions.length > 0
+      ? JSON.stringify(params.mentions)
+      : null
   database
     .prepare(
-      `INSERT INTO messages (id, channel_id, from_type, from_id, content, timestamp, thread_ts)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO messages (id, channel_id, from_type, from_id, content, timestamp, thread_ts, mentions)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -142,7 +180,8 @@ export function insertMessage(
       params.fromId,
       params.content,
       ts,
-      params.threadTs ?? null
+      params.threadTs ?? null,
+      mentionsStr
     )
   return {
     id,
@@ -152,6 +191,7 @@ export function insertMessage(
     content: params.content,
     timestamp: ts,
     thread_ts: params.threadTs ?? null,
+    mentions: mentionsStr,
   }
 }
 
@@ -186,6 +226,14 @@ export function insertAgent(
 
 export function getChannelById(database: Database.Database, id: string): Channel | null {
   return (database.prepare('SELECT id, name, description, created_at FROM channels WHERE id = ?').get(id) as Channel) ?? null
+}
+
+export function getMessageById(database: Database.Database, id: string): Message | null {
+  return (database
+    .prepare(
+      'SELECT id, channel_id, from_type, from_id, content, timestamp, thread_ts, mentions FROM messages WHERE id = ?'
+    )
+    .get(id) as Message) ?? null
 }
 
 export function getDb(): Database.Database | null {

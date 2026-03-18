@@ -5,6 +5,35 @@ import { insertMessage, insertAgent, getChannelById } from './db'
 
 const DEFAULT_PORT = 8765
 
+const agentSockets = new Map<string, WebSocket>()
+
+export interface MentionMessage {
+  messageId: string
+  channelId: string
+  channelName: string
+  fromType: string
+  fromId: string
+  content: string
+  mentions: string[]
+  threadTs: string | null
+  timestamp: number
+}
+
+export function pushMentionToAgents(msg: MentionMessage): void {
+  for (const agentId of msg.mentions) {
+    const ws = agentSockets.get(agentId)
+    if (ws && ws.readyState === 1) {
+      ws.send(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'message/mention',
+          params: msg,
+        })
+      )
+    }
+  }
+}
+
 interface JsonRpcRequest {
   jsonrpc?: string
   method?: string
@@ -80,6 +109,8 @@ export function startWebSocketServer(
           return
         }
         try {
+          agentSockets.set(agentId, ws)
+          ws.on('close', () => agentSockets.delete(agentId))
           const agent = insertAgent(db, {
             id: agentId,
             name,
@@ -99,6 +130,7 @@ export function startWebSocketServer(
         const channelId = params.channelId as string
         const content = (params.content as string)?.trim?.()
         const agentId = params.agentId as string
+        const mentions = (params.mentions as string[]) ?? []
         if (!channelId || !content || !agentId) {
           sendResponse(ws, id, undefined, { code: -32602, message: 'Invalid params: agentId, channelId and content required' })
           return
@@ -115,9 +147,23 @@ export function startWebSocketServer(
             fromId: agentId,
             content,
             threadTs: (params.threadTs as string) ?? null,
+            mentions: mentions.length > 0 ? mentions : null,
           })
           sendResponse(ws, id, { id: msg.id, timestamp: msg.timestamp })
           onNewMessage?.()
+          if (mentions.length > 0) {
+            pushMentionToAgents({
+              messageId: msg.id,
+              channelId,
+              channelName: channel.name,
+              fromType: 'agent',
+              fromId: agentId,
+              content,
+              mentions,
+              threadTs: msg.thread_ts,
+              timestamp: msg.timestamp,
+            })
+          }
         } catch (e) {
           sendResponse(ws, id, undefined, { code: -32603, message: String(e) })
         }

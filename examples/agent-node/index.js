@@ -40,6 +40,29 @@ function main() {
       return
     }
 
+    // Phase 3: Server push - message/mention (no id)
+    if (res.method === 'message/mention') {
+      const p = res.params || {}
+      console.log('[Mention]', p.fromId, 'in', p.channelName, ':', p.content)
+      // Optional: reply when mentioned
+      if (channelId && p.channelId) {
+        ws.send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'message/send',
+            params: {
+              agentId: AGENT_ID,
+              channelId: p.channelId,
+              content: `Thanks for the mention! I received: "${p.content?.slice(0, 50)}..."`,
+              mentions: [],
+            },
+            id: Date.now(),
+          })
+        )
+      }
+      return
+    }
+
     if (res.id === 0) {
       channelId = res.result?.channels?.[0]?.id
       if (!channelId) {
@@ -63,13 +86,19 @@ function main() {
         JSON.stringify({
           jsonrpc: '2.0',
           method: 'message/send',
-          params: { agentId: AGENT_ID, channelId, content: 'Hello from Node.js SDK!' },
+          params: {
+            agentId: AGENT_ID,
+            channelId,
+            content: 'Hello from Node.js SDK! Use @Demo Agent to mention me.',
+            mentions: [],
+          },
           id: 2,
         })
       )
     } else if (res.id === 2) {
       console.log('Message sent:', res.result)
-      ws.close()
+      console.log('Staying connected. Send a message with @Demo Agent to trigger a mention.')
+      // Keep connection open to receive message/mention
     }
   })
 
