@@ -23,7 +23,7 @@ export function MessageBubble({ message, showReplyButton = true }: MessageBubble
         }`}
       >
         {!isUser && (
-          <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm shrink-0">
+          <div className="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-white text-xs shrink-0">
             {message.from_id.charAt(0).toUpperCase()}
           </div>
         )}

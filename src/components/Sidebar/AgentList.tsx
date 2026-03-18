@@ -35,14 +35,14 @@ export function AgentList() {
               key={agent.id}
               type="button"
               onClick={() => setSelectedAgentId(agent.id)}
-              className="w-full text-left px-2 py-1.5 rounded hover:bg-slate-700 cursor-pointer transition-colors flex items-center gap-2"
+              className="w-full text-left px-2 py-1.5 rounded-md hover:bg-slate-700 cursor-pointer transition-colors flex items-center gap-2"
             >
               <div className="relative shrink-0">
-                <div className="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-xs">
+                <div className="w-5 h-5 rounded-full bg-slate-600 flex items-center justify-center text-[10px] shrink-0">
                   {agent.name.charAt(0).toUpperCase()}
                 </div>
                 <span
-                  className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-slate-800 ${
+                  className={`absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full border border-slate-800 ${
                     isOnline ? 'bg-green-500' : 'bg-slate-500'
                   }`}
                   title={isOnline ? 'Online' : 'Offline'}

@@ -1,3 +1,4 @@
+import { Hash } from 'lucide-react'
 import { useChannels } from '@/hooks/useChannels'
 import { useChannelThreadCounts } from '@/hooks/useChannelThreadCounts'
 import { useUIStore } from '@/stores/uiStore'
@@ -36,11 +37,12 @@ export function ChannelList() {
           <button
             key={ch.id}
             onClick={() => setSelectedChannel(ch.id)}
-            className={`w-full text-left px-2 py-1.5 rounded hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 ${
+            className={`w-full text-left px-2 py-1.5 rounded-md hover:bg-slate-700 transition-colors flex items-center gap-2 ${
               selectedChannelId === ch.id ? 'bg-slate-700 text-white' : ''
             }`}
           >
-            <span className="truncate flex-1">{ch.name}</span>
+            <Hash className="w-4 h-4 shrink-0 text-slate-400" />
+            <span className="truncate flex-1 min-w-0">{ch.name}</span>
             <span className="shrink-0 flex items-center gap-1">
               {unreadCount > 0 && (
                 <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-medium flex items-center justify-center">
