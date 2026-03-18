@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
 import { ChannelList } from './ChannelList'
-import { AgentList } from './AgentList'
+import { DmList } from './DmList'
 import { CollapseButton } from './CollapseButton'
 import { useUIStore } from '@/stores/uiStore'
+import { AtSign } from 'lucide-react'
 
 export function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed)
   const setSidebarCollapsed = useUIStore((s) => s.setSidebarCollapsed)
+  const selectedActivityView = useUIStore((s) => s.selectedActivityView)
+  const setSelectedActivityView = useUIStore((s) => s.setSelectedActivityView)
 
   useEffect(() => {
     window.electronAPI?.sidebar?.getCollapsed?.().then(setSidebarCollapsed)
@@ -32,9 +35,24 @@ export function Sidebar() {
             </div>
             <ChannelList />
             <div className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1 mt-4">
-              Agents
+              Direct Messages
             </div>
-            <AgentList />
+            <DmList />
+            <div className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1 mt-4">
+              Activity
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedActivityView(selectedActivityView === 'mentions' ? null : 'mentions')}
+              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-sm ${
+                selectedActivityView === 'mentions'
+                  ? 'bg-violet-600 hover:bg-violet-600 text-white'
+                  : 'hover:bg-slate-700 text-slate-300'
+              }`}
+            >
+              <AtSign className="w-4 h-4 shrink-0" />
+              @Mentions
+            </button>
           </>
         )}
       </nav>

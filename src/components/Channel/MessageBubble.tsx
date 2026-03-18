@@ -30,7 +30,7 @@ export function MessageBubble({ message, showReplyButton = true }: MessageBubble
         <div
           className={`rounded-lg px-3 py-2 ${
             isUser
-              ? 'bg-blue-500 text-white'
+              ? 'bg-violet-600 text-white'
               : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
           }`}
         >

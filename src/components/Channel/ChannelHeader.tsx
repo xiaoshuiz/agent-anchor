@@ -5,9 +5,11 @@ import { Search } from '@/components/Search/Search'
 
 export function ChannelHeader() {
   const selectedChannelId = useUIStore((s) => s.selectedChannelId)
+  const selectedActivityView = useUIStore((s) => s.selectedActivityView)
   const { channels } = useChannels()
   const channel = channels.find((c) => c.id === selectedChannelId)
   const [searchOpen, setSearchOpen] = useState(false)
+  const title = selectedActivityView === 'mentions' ? '@Mentions' : (channel ? channel.name : 'Select a channel')
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -24,7 +26,7 @@ export function ChannelHeader() {
     <>
       <header className="h-14 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between px-4 shrink-0">
         <span className="font-medium text-slate-800 dark:text-slate-200">
-          {channel ? channel.name : 'Select a channel'}
+          {title}
         </span>
         <button
           type="button"

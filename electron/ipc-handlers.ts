@@ -8,9 +8,14 @@ import {
   messagesListByChannel,
   messagesListByThread,
   insertMessage,
+  insertAgent,
+  insertChannel,
+  insertChannelMembers,
   getChannelById,
+  getOrCreateDm,
   getThreadCountByChannel,
   getMessageById,
+  getMessagesMentioningUser,
   getDb,
   getUnreadCounts,
   markChannelRead,
@@ -32,9 +37,14 @@ export function setCurrentChannelId(id: string | null): void {
 }
 
 let unreadInvalidateSender: (() => void) | null = null
+let agentsInvalidateSender: (() => void) | null = null
 
 export function registerUnreadInvalidateSender(sender: () => void): void {
   unreadInvalidateSender = sender
+}
+
+export function registerAgentsInvalidateSender(sender: () => void): void {
+  agentsInvalidateSender = sender
 }
 
 export function handleNewMessageFromAgent(channelId: string): void {
@@ -58,6 +68,60 @@ export function registerIpcHandlers(): void {
     return database.prepare('SELECT * FROM channels WHERE id = ?').get(id) ?? null
   })
 
+  ipcMain.handle(
+    'channels:create',
+    async (
+      _,
+      params: { name: string; description?: string | null; agentIds?: string[] }
+    ): Promise<{ id: string; name: string } | { error: string }> => {
+      const database = getDb()
+      if (!database) return { error: 'Database not initialized' }
+      let name = (params.name ?? '').trim()
+      if (!name) return { error: 'Channel name is required' }
+      if (!name.startsWith('#')) name = `#${name}`
+      try {
+        const channel = insertChannel(database, {
+          name,
+          description: params.description?.trim() || null,
+        })
+        const agentIds = params.agentIds ?? []
+        if (agentIds.length > 0) {
+          insertChannelMembers(database, channel.id, agentIds)
+        }
+        return { id: channel.id, name: channel.name }
+      } catch (e) {
+        return { error: String(e) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'channels:addMembers',
+    async (_, channelId: string, agentIds: string[]): Promise<void | { error: string }> => {
+      const database = getDb()
+      if (!database) return { error: 'Database not initialized' }
+      const channel = getChannelById(database, channelId)
+      if (!channel) return { error: 'Channel not found' }
+      try {
+        insertChannelMembers(database, channelId, agentIds)
+      } catch (e) {
+        return { error: String(e) }
+      }
+    }
+  )
+
+  ipcMain.handle('channels:getOrCreateDm', async (_, agentId: string) => {
+    const database = getDb()
+    if (!database) return null
+    return getOrCreateDm(database, agentId)
+  })
+
+  ipcMain.handle('messages:listMentions', async () => {
+    const database = getDb()
+    if (!database) return []
+    return getMessagesMentioningUser(database)
+  })
+
   ipcMain.handle('agents:list', async () => {
     const database = getDb()
     if (!database) return []
@@ -69,6 +133,33 @@ export function registerIpcHandlers(): void {
     if (!database) return null
     return database.prepare('SELECT * FROM agents WHERE id = ?').get(id) ?? null
   })
+
+  ipcMain.handle(
+    'agents:create',
+    async (
+      _,
+      params: { id: string; name: string; description?: string | null; capabilities?: string[] | string | null }
+    ): Promise<{ id: string } | { error: string }> => {
+      const database = getDb()
+      if (!database) return { error: 'Database not initialized' }
+      const id = (params.id ?? '').trim()
+      const name = (params.name ?? '').trim()
+      if (!id || !name) return { error: 'id and name are required' }
+      if (!/^[a-zA-Z0-9_-]+$/.test(id)) return { error: 'id must be alphanumeric, underscore or hyphen only' }
+      try {
+        const agent = insertAgent(database, {
+          id,
+          name,
+          description: params.description?.trim() || null,
+          capabilities: params.capabilities ?? null,
+        })
+        agentsInvalidateSender?.()
+        return { id: agent.id }
+      } catch (e) {
+        return { error: String(e) }
+      }
+    }
+  )
 
   ipcMain.handle('messages:list', async (_, channelId: string) => {
     const database = getDb()

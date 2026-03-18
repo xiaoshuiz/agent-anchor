@@ -3,6 +3,8 @@ export interface Channel {
   name: string
   description?: string
   created_at: number
+  type?: 'channel' | 'dm'
+  dm_agent_id?: string | null
 }
 
 export interface Agent {
@@ -39,10 +41,14 @@ export interface ElectronAPI {
     list: () => Promise<Channel[]>
     get: (id: string) => Promise<Channel | null>
     getThreadCount: (channelId: string) => Promise<number>
+    create?: (params: { name: string; description?: string | null; agentIds?: string[] }) => Promise<{ id: string; name: string } | { error: string }>
+    addMembers?: (channelId: string, agentIds: string[]) => Promise<void | { error: string }>
+    getOrCreateDm?: (agentId: string) => Promise<Channel | null>
   }
   agents: {
     list: () => Promise<Agent[]>
     get: (id: string) => Promise<Agent | null>
+    create?: (params: { id: string; name: string; description?: string | null; capabilities?: string[] | string | null }) => Promise<{ id: string } | { error: string }>
     getStatus?: () => Promise<Record<string, 'online' | 'offline'>>
     onInvalidated?: (callback: () => void) => void
     onStatusChanged?: (callback: () => void) => void
@@ -50,6 +56,7 @@ export interface ElectronAPI {
   messages: {
     list: (channelId: string) => Promise<Message[]>
     listByThread: (channelId: string, rootMessageId: string) => Promise<Message[]>
+    listMentions?: () => Promise<Message[]>
     get: (id: string) => Promise<Message | null>
     send: (channelId: string, content: string, threadTs?: string | null, mentions?: string[]) => Promise<Message | { error: string }>
     onInvalidated?: (callback: () => void) => void

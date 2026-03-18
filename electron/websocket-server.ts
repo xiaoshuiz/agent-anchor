@@ -71,7 +71,7 @@ export function getOnlineAgentIds(): Set<string> {
 }
 
 export interface WebSocketServerCallbacks {
-  onNewMessage?: (channelId: string) => void
+  onNewMessage?: (channelId: string, mentions?: string[]) => void
   onAgentRegistered?: () => void
   onAgentStatusChanged?: () => void
 }
@@ -178,7 +178,7 @@ export function startWebSocketServer(
             mentions: mentions.length > 0 ? mentions : null,
           })
           sendResponse(ws, id, { id: msg.id, timestamp: msg.timestamp })
-          onNewMessage?.(channelId)
+          onNewMessage?.(channelId, mentions)
           if (mentions.length > 0) {
             pushMentionToAgents({
               messageId: msg.id,
