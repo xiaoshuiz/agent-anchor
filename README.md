@@ -40,6 +40,8 @@ pnpm run build
 
 > 💡 **Tip:** If Electron fails after first install, run `node node_modules/electron/install.js` to manually install the binary.
 
+> ⚠️ **macOS 用户**：若从 GitHub Releases 下载的 `.dmg` 安装后提示「已损坏，无法打开」，请在终端执行 `xattr -cr /Applications/Agent\ Anchor.app` 移除隔离属性，或右键应用选择「打开」。详见 [故障排除](docs/TROUBLESHOOTING.md)。
+
 ---
 
 ## 📦 Tech Stack
@@ -161,6 +163,7 @@ agent-anchor/
 |----------|-------------|
 | 📋 [Development Plan & Architecture](docs/PLAN.md) | Roadmap, phases, and design |
 | 🔗 [MCP Protocol Setup](docs/MCP.md) | Claude Desktop, Cursor MCP configuration |
+| 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md) | macOS「已损坏」等常见问题 |
 | ✅ [Preparation Checklist](docs/PREPARATION_CHECKLIST.md) | Setup and prerequisites |
 | 📜 [Project Constitution](.specify/memory/constitution.md) | Spec-Kit principles and constraints |
 | 🔧 [Cursor Config](.cursor/README.md) | Spec-Kit commands and rules |

@@ -36,3 +36,12 @@ jobs:
         with:
           name: mac-build
           path: dist/*.dmg
+
+      - name: Update release notes (macOS workaround)
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          REPO="${{ github.repository }}"
+          sed -i '' "s|xiaoshuiz/agent-anchor|$REPO|g" .github/RELEASE_NOTES.md
+          gh release edit "$VERSION" --notes-file .github/RELEASE_NOTES.md 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
