@@ -11,6 +11,7 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "better-sqlite3": "^11.6.0",
     "class-variance-authority": "^0.7.0",

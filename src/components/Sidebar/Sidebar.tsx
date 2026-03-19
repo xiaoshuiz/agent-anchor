@@ -1,15 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ChannelList } from './ChannelList'
 import { DmList } from './DmList'
 import { CollapseButton } from './CollapseButton'
+import { SettingsModal } from '@/components/Settings/SettingsModal'
 import { useUIStore } from '@/stores/uiStore'
-import { AtSign } from 'lucide-react'
+import { AtSign, Settings } from 'lucide-react'
 
 export function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed)
   const setSidebarCollapsed = useUIStore((s) => s.setSidebarCollapsed)
   const selectedActivityView = useUIStore((s) => s.selectedActivityView)
   const setSelectedActivityView = useUIStore((s) => s.setSelectedActivityView)
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     window.electronAPI?.sidebar?.getCollapsed?.().then(setSidebarCollapsed)
@@ -21,9 +23,18 @@ export function Sidebar() {
         collapsed ? 'w-14' : 'w-60'
       }`}
     >
-      <div className="p-2 border-b border-slate-700 flex items-center justify-end shrink-0">
+      <div className="p-2 border-b border-slate-700 flex items-center justify-end gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => setShowSettings(true)}
+          className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
+          aria-label="Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
         <CollapseButton />
       </div>
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       <nav className="flex-1 overflow-y-auto p-2">
         {!collapsed && (
           <>
@@ -34,7 +45,7 @@ export function Sidebar() {
             <div className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1 mt-4">
               Direct Messages
             </div>
-            <DmList />
+            <DmList onOpenSettings={() => setShowSettings(true)} />
             <div className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1 mt-4">
               Activity
             </div>

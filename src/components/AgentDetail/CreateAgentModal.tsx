@@ -1,41 +1,79 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface CreateAgentModalProps {
   onClose: () => void
   onCreated: () => void
+  onOpenSettings?: () => void
 }
 
-export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) {
-  const [id, setId] = useState('')
+export function CreateAgentModal({ onClose, onCreated, onOpenSettings }: CreateAgentModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [capabilities, setCapabilities] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [createdName, setCreatedName] = useState('')
+  const [hasClaudeKey, setHasClaudeKey] = useState(false)
+  const [showCustom, setShowCustom] = useState(false)
+  const [customId, setCustomId] = useState('')
+  const [customName, setCustomName] = useState('')
+  const [customDesc, setCustomDesc] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    window.electronAPI?.agents?.hasApiKey?.('claude').then(setHasClaudeKey)
+  }, [])
+
+  const handleSubmitClaude = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    const trimmedId = id.trim()
     const trimmedName = name.trim()
-    if (!trimmedId || !trimmedName) {
-      setError('ID and name are required')
+    if (!trimmedName) {
+      setError('请输入名称')
       return
     }
-    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedId)) {
-      setError('ID must contain only letters, numbers, underscore or hyphen')
+    if (!hasClaudeKey) {
+      setError('请先在设置中配置 Claude API Key')
       return
     }
     setSubmitting(true)
     try {
-      const caps = capabilities.trim()
-        ? capabilities.split(',').map((c) => c.trim()).filter(Boolean)
-        : undefined
       const result = await window.electronAPI?.agents?.create?.({
-        id: trimmedId,
         name: trimmedName,
         description: description.trim() || undefined,
-        capabilities: caps,
+        provider: 'claude',
+      })
+      if (result && 'error' in result) {
+        setError(result.error)
+        return
+      }
+      onCreated()
+      setCreatedName(trimmedName)
+      setShowSuccess(true)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleSubmitCustom = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    const id = customId.trim()
+    const n = customName.trim()
+    if (!id || !n) {
+      setError('ID 和名称必填')
+      return
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      setError('ID 仅限字母、数字、下划线、连字符')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const result = await window.electronAPI?.agents?.create?.({
+        id,
+        name: n,
+        description: customDesc.trim() || undefined,
+        provider: 'websocket',
       })
       if (result && 'error' in result) {
         setError(result.error)
@@ -58,11 +96,11 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
         className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-4 border border-slate-200 dark:border-slate-700"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Create Agent"
+        aria-label="Add Agent"
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-            Add Agent
+            添加 Agent
           </h2>
           <button
             type="button"
@@ -73,75 +111,135 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
             ✕
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
-              ID
-            </label>
-            <input
-              type="text"
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              placeholder="e.g. agent-coder"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
-              Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Coder"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
-              Description (optional)
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
-              Capabilities (optional, comma-separated)
-            </label>
-            <input
-              type="text"
-              value={capabilities}
-              onChange={(e) => setCapabilities(e.target.value)}
-              placeholder="e.g. code, refactor"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
-          <div className="flex justify-end gap-2 pt-2">
+        {showSuccess ? (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              <strong>{createdName}</strong> 已创建，可直接 DM 或 @{createdName} 对话。
+            </p>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="w-full px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
-            >
-              {submitting ? 'Creating...' : 'Create'}
+              完成
             </button>
           </div>
-        </form>
+        ) : !showCustom ? (
+          <form onSubmit={handleSubmitClaude} className="space-y-3">
+            {!hasClaudeKey && (
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm">
+                <p className="text-amber-800 dark:text-amber-200">
+                  请先在设置中配置 Claude API Key
+                </p>
+                {onOpenSettings && (
+                  <button
+                    type="button"
+                    onClick={() => { onClose(); onOpenSettings() }}
+                    className="mt-2 text-violet-600 dark:text-violet-400 hover:underline"
+                  >
+                    打开设置 →
+                  </button>
+                )}
+              </div>
+            )}
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
+                名称 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Claude 写作助手"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
+                身份描述（可选）
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. 擅长创意写作与润色"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !hasClaudeKey}
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
+              >
+                {submitting ? '创建中...' : '创建'}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCustom(true)}
+              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-400"
+            >
+              添加 WebSocket 自定义 Agent →
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmitCustom} className="space-y-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              自定义 Agent 需通过 WebSocket 连接，见 examples/agent-node
+            </p>
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">ID *</label>
+              <input
+                type="text"
+                value={customId}
+                onChange={(e) => setCustomId(e.target.value)}
+                placeholder="e.g. agent-coder"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">名称 *</label>
+              <input
+                type="text"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="e.g. Coder"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">描述（可选）</label>
+              <input
+                type="text"
+                value={customDesc}
+                onChange={(e) => setCustomDesc(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+              />
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setShowCustom(false)} className="px-4 py-2 rounded-lg text-slate-600">
+                返回
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
+              >
+                {submitting ? '创建中...' : '创建'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )

@@ -3,7 +3,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 
-const DB_VERSION = 5
+const DB_VERSION = 6
 
 let db: Database.Database | null = null
 
@@ -110,6 +110,15 @@ function runMigrations(database: Database.Database): void {
     } catch {
       // Column may already exist
     }
+    database.pragma('user_version = 5')
+  }
+
+  if (current >= 5 && current < 6) {
+    try {
+      database.exec('ALTER TABLE agents ADD COLUMN provider TEXT DEFAULT "websocket"')
+    } catch {
+      // Column may already exist
+    }
     database.pragma(`user_version = ${DB_VERSION}`)
   }
 }
@@ -141,6 +150,7 @@ export interface Agent {
   avatar: string | null
   capabilities: string | null
   created_at: number
+  provider?: 'claude' | 'websocket'
 }
 
 export interface Message {
@@ -169,9 +179,13 @@ export function channelsList(database: Database.Database): Channel[] {
 }
 
 export function agentsList(database: Database.Database): Agent[] {
-  return database.prepare(
-    'SELECT id, name, description, avatar, capabilities, created_at FROM agents ORDER BY created_at ASC'
-  ).all() as Agent[]
+  const rows = database.prepare(
+    'SELECT id, name, description, avatar, capabilities, created_at, provider FROM agents ORDER BY created_at ASC'
+  ).all() as Array<Agent & { provider?: string }>
+  return rows.map((r) => ({
+    ...r,
+    provider: (r.provider === 'claude' ? 'claude' : 'websocket') as 'claude' | 'websocket',
+  }))
 }
 
 export function messagesListByChannel(database: Database.Database, channelId: string): Message[] {
@@ -248,33 +262,65 @@ export function insertMessage(
   }
 }
 
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .slice(0, 32) || 'agent'
+}
+
+function ensureUniqueClaudeId(database: Database.Database, base: string): string {
+  let id = base
+  let n = 1
+  while (database.prepare('SELECT 1 FROM agents WHERE id = ?').get(id)) {
+    id = `${base}-${n++}`
+  }
+  return id
+}
+
 export function insertAgent(
   database: Database.Database,
-  params: { id: string; name: string; description?: string | null; avatar?: string | null; capabilities?: string | null }
+  params: {
+    id?: string
+    name: string
+    description?: string | null
+    avatar?: string | null
+    capabilities?: string | null
+    provider?: 'claude' | 'websocket'
+  }
 ): Agent {
   const now = Math.floor(Date.now() / 1000)
   const caps = params.capabilities ?? null
   const capsStr = typeof caps === 'string' ? caps : caps ? JSON.stringify(caps) : null
+  const provider = params.provider ?? 'websocket'
+  const id =
+    params.id ??
+    (provider === 'claude' ? ensureUniqueClaudeId(database, `claude-${slugify(params.name)}`) : randomUUID())
   database
     .prepare(
-      `INSERT INTO agents (id, name, description, avatar, capabilities, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO agents (id, name, description, avatar, capabilities, created_at, provider)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          name = excluded.name,
          description = excluded.description,
          avatar = excluded.avatar,
-         capabilities = excluded.capabilities`
+         capabilities = excluded.capabilities,
+         provider = excluded.provider`
     )
-    .run(
-      params.id,
-      params.name,
-      params.description ?? null,
-      params.avatar ?? null,
-      capsStr,
-      now
-    )
-  const row = database.prepare('SELECT id, name, description, avatar, capabilities, created_at FROM agents WHERE id = ?').get(params.id) as Agent
-  return row
+    .run(id, params.name, params.description ?? null, params.avatar ?? null, capsStr, now, provider)
+  const row = database
+    .prepare('SELECT id, name, description, avatar, capabilities, created_at, provider FROM agents WHERE id = ?')
+    .get(id) as Agent & { provider?: string }
+  return { ...row, provider: (row?.provider === 'claude' ? 'claude' : 'websocket') as 'claude' | 'websocket' }
+}
+
+export function getAgentById(database: Database.Database, id: string): Agent | null {
+  const row = database
+    .prepare('SELECT id, name, description, avatar, capabilities, created_at, provider FROM agents WHERE id = ?')
+    .get(id) as (Agent & { provider?: string }) | undefined
+  if (!row) return null
+  return { ...row, provider: (row.provider === 'claude' ? 'claude' : 'websocket') as 'claude' | 'websocket' }
 }
 
 export function getChannelById(database: Database.Database, id: string): Channel | null {
