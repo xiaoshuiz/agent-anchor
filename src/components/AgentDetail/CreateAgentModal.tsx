@@ -14,10 +14,13 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [capabilities, setCapabilities] = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [showBridgeHint, setShowBridgeHint] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null)
+
+  const isClaude = id === 'claude'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,6 +33,10 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
     }
     if (!/^[a-zA-Z0-9_-]+$/.test(trimmedId)) {
       setError('ID must contain only letters, numbers, underscore or hyphen')
+      return
+    }
+    if (isClaude && !apiKey.trim()) {
+      setError('API key is required for Claude')
       return
     }
     setSubmitting(true)
@@ -47,11 +54,14 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
         setError(result.error)
         return
       }
+      if (isClaude && apiKey.trim()) {
+        await window.electronAPI?.agents?.setApiKey?.('claude', apiKey.trim())
+      }
       onCreated()
       const isPreset = PRESETS.some((p) => p.id === trimmedId)
       if (isPreset) {
         setCreatedAgentId(trimmedId)
-        setShowBridgeHint(true)
+        setShowSuccess(true)
       } else {
         onClose()
       }
@@ -78,31 +88,24 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
           </h2>
           <button
             type="button"
-            onClick={() => { setShowBridgeHint(false); onClose() }}
+            onClick={() => { setShowSuccess(false); onClose() }}
             className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
-        {showBridgeHint && createdAgentId ? (
+        {showSuccess && createdAgentId ? (
           <div className="space-y-3">
             <p className="text-sm text-slate-700 dark:text-slate-300">
-              Agent <strong>{createdAgentId}</strong> created. To connect it:
+              <strong>{createdAgentId === 'claude' ? 'Claude' : createdAgentId}</strong> 已就绪，可直接在 app 内对话。
             </p>
-            {createdAgentId === 'claude' && (
-              <div className="rounded-lg bg-slate-100 dark:bg-slate-700 p-3 text-sm font-mono text-slate-800 dark:text-slate-200">
-                <p className="font-medium mb-1">Run Claude bridge:</p>
-                <code className="block truncate">cd examples/agent-claude && pnpm install && ANTHROPIC_API_KEY=your_key node index.js</code>
-                <p className="mt-2 text-xs text-slate-500">Get key at console.anthropic.com</p>
-              </div>
-            )}
             <button
               type="button"
               onClick={onClose}
               className="w-full px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
             >
-              Done
+              完成
             </button>
           </div>
         ) : (
@@ -160,6 +163,21 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
               className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
+          {isClaude && (
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
+                Anthropic API Key <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-ant-..."
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+              <p className="mt-1 text-xs text-slate-500">从 console.anthropic.com 获取</p>
+            </div>
+          )}
           <div>
             <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">
               Capabilities (optional, comma-separated)

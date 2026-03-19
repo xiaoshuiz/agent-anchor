@@ -49,6 +49,8 @@ export interface ElectronAPI {
     list: () => Promise<Agent[]>
     get: (id: string) => Promise<Agent | null>
     create?: (params: { id: string; name: string; description?: string | null; capabilities?: string[] | string | null }) => Promise<{ id: string } | { error: string }>
+    setApiKey?: (agentId: string, apiKey: string) => Promise<void>
+    hasApiKey?: (agentId: string) => Promise<boolean>
     getStatus?: () => Promise<Record<string, 'online' | 'offline'>>
     onInvalidated?: (callback: () => void) => void
     onStatusChanged?: (callback: () => void) => void

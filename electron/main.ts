@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Notification } from 'electron'
 import { join } from 'path'
-import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, registerAgentsInvalidateSender, getCurrentChannelId } from './ipc-handlers'
+import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, registerAgentsInvalidateSender, registerMessagesInvalidateSender, getCurrentChannelId } from './ipc-handlers'
 import { startWebSocketServer } from './websocket-server'
 import { startMcpServer } from './mcp-server'
 import { getDb } from './db'
@@ -77,6 +77,7 @@ app.whenReady().then(() => {
   initDbAndHandlers()
   registerUnreadInvalidateSender(notifyUnreadRefresh)
   registerAgentsInvalidateSender(notifyAgentsRefresh)
+  registerMessagesInvalidateSender(notifyRendererRefresh)
   startWebSocketServer(8765, {
     onNewMessage,
     onAgentRegistered: notifyAgentsRefresh,

@@ -1,11 +1,8 @@
-# Claude Bridge for Agent Anchor
+# Claude Bridge (Optional)
 
-在 Agent Anchor 中管理并与之交互：将 Claude 作为可对话的 Agent，支持 DM 私聊与 @mention。
+**推荐**：在 app 内 Add Agent → Claude，输入 API Key 即可，无需运行此脚本。
 
-## 前置条件
-
-1. **Anthropic API Key**：在 https://console.anthropic.com/ 获取
-2. **Agent Anchor 已启动**：`pnpm run dev`
+本脚本为可选的外部桥接，适用于需要独立进程或自定义逻辑的场景。
 
 ## 使用
 
@@ -14,12 +11,6 @@ cd examples/agent-claude
 pnpm install
 ANTHROPIC_API_KEY=your_key node index.js
 ```
-
-## 工作流程
-
-1. 在 Agent Anchor 中「Add Agent」，ID 填 `claude`，Name 填 `Claude`
-2. 启动本桥接：`ANTHROPIC_API_KEY=sk-xxx node index.js`
-3. 打开与 Claude 的 DM，或在任何频道 @Claude，即可对话
 
 ## 配置
 

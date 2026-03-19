@@ -23,8 +23,10 @@ import {
   searchMessages,
 } from './db'
 import { pushMentionToAgents, pushDmToAgent, getOnlineAgentIds } from './websocket-server'
+import { respondWithClaude } from './claude-responder'
 
 const uiStore = new Store<{ sidebarCollapsed?: boolean }>({ name: 'ui' })
+const agentKeysStore = new Store<Record<string, string>>({ name: 'agent-keys' })
 
 let currentChannelId: string | null = null
 
@@ -38,6 +40,7 @@ export function setCurrentChannelId(id: string | null): void {
 
 let unreadInvalidateSender: (() => void) | null = null
 let agentsInvalidateSender: (() => void) | null = null
+let messagesInvalidateSender: (() => void) | null = null
 
 export function registerUnreadInvalidateSender(sender: () => void): void {
   unreadInvalidateSender = sender
@@ -45,6 +48,14 @@ export function registerUnreadInvalidateSender(sender: () => void): void {
 
 export function registerAgentsInvalidateSender(sender: () => void): void {
   agentsInvalidateSender = sender
+}
+
+export function registerMessagesInvalidateSender(sender: () => void): void {
+  messagesInvalidateSender = sender
+}
+
+export function getAgentApiKey(agentId: string): string | undefined {
+  return agentKeysStore.get(agentId)
 }
 
 export function handleNewMessageFromAgent(channelId: string): void {
@@ -134,6 +145,19 @@ export function registerIpcHandlers(): void {
     return database.prepare('SELECT * FROM agents WHERE id = ?').get(id) ?? null
   })
 
+  ipcMain.handle('agents:setApiKey', async (_, agentId: string, apiKey: string) => {
+    const trimmed = apiKey?.trim?.()
+    if (!trimmed) {
+      agentKeysStore.delete(agentId)
+      return
+    }
+    agentKeysStore.set(agentId, trimmed)
+  })
+
+  ipcMain.handle('agents:hasApiKey', async (_, agentId: string) => {
+    return !!agentKeysStore.get(agentId)
+  })
+
   ipcMain.handle(
     'agents:create',
     async (
@@ -207,30 +231,64 @@ export function registerIpcHandlers(): void {
           mentions: mentions ?? null,
         })
         const ch = channel as { type?: string; dm_agent_id?: string }
-        if (ch.type === 'dm' && ch.dm_agent_id) {
-          pushDmToAgent(ch.dm_agent_id, {
-            messageId: msg.id,
-            channelId,
-            channelName: channel.name,
-            fromType: 'user',
-            fromId: 'user',
-            content: trimmed,
-            timestamp: msg.timestamp,
-          })
-        }
+        const dmAgentId = ch.type === 'dm' ? ch.dm_agent_id : null
         const mentionIds = mentions && mentions.length > 0 ? mentions : []
-        if (mentionIds.length > 0) {
-          pushMentionToAgents({
-            messageId: msg.id,
-            channelId,
+        const claudeApiKey = agentKeysStore.get('claude')
+
+        if (claudeApiKey && (dmAgentId === 'claude' || mentionIds.includes('claude'))) {
+          respondWithClaude(claudeApiKey, trimmed, {
             channelName: channel.name,
-            fromType: 'user',
-            fromId: 'user',
-            content: trimmed,
-            mentions: mentionIds,
-            threadTs: msg.thread_ts,
-            timestamp: msg.timestamp,
+            isDm: ch.type === 'dm',
           })
+            .then((reply) => {
+              insertMessage(database, {
+                channelId,
+                fromType: 'agent',
+                fromId: 'claude',
+                content: reply,
+                threadTs: threadTs ?? null,
+                mentions: null,
+              })
+              messagesInvalidateSender?.()
+              unreadInvalidateSender?.()
+            })
+            .catch((e) => {
+              console.error('[Claude]', e)
+              insertMessage(database, {
+                channelId,
+                fromType: 'agent',
+                fromId: 'claude',
+                content: `Error: ${(e as Error).message}`,
+                threadTs: threadTs ?? null,
+                mentions: null,
+              })
+              messagesInvalidateSender?.()
+            })
+        } else {
+          if (dmAgentId) {
+            pushDmToAgent(dmAgentId, {
+              messageId: msg.id,
+              channelId,
+              channelName: channel.name,
+              fromType: 'user',
+              fromId: 'user',
+              content: trimmed,
+              timestamp: msg.timestamp,
+            })
+          }
+          if (mentionIds.length > 0) {
+            pushMentionToAgents({
+              messageId: msg.id,
+              channelId,
+              channelName: channel.name,
+              fromType: 'user',
+              fromId: 'user',
+              content: trimmed,
+              mentions: mentionIds,
+              threadTs: msg.thread_ts,
+              timestamp: msg.timestamp,
+            })
+          }
         }
         return msg
       } catch (e) {
@@ -280,7 +338,11 @@ export function registerIpcHandlers(): void {
     const agents = agentsList(database)
     const status: Record<string, 'online' | 'offline'> = {}
     for (const a of agents) {
-      status[a.id] = online.has(a.id) ? 'online' : 'offline'
+      if (a.id === 'claude' && agentKeysStore.get('claude')) {
+        status[a.id] = 'online'
+      } else {
+        status[a.id] = online.has(a.id) ? 'online' : 'offline'
+      }
     }
     return status
   })

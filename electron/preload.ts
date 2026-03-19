@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get: (id: string) => ipcRenderer.invoke('agents:get', id),
     create: (params: { id: string; name: string; description?: string | null; capabilities?: string[] | string | null }) =>
       ipcRenderer.invoke('agents:create', params),
+    setApiKey: (agentId: string, apiKey: string) =>
+      ipcRenderer.invoke('agents:setApiKey', agentId, apiKey),
+    hasApiKey: (agentId: string) => ipcRenderer.invoke('agents:hasApiKey', agentId) as Promise<boolean>,
     getStatus: () => ipcRenderer.invoke('agents:getStatus') as Promise<Record<string, 'online' | 'offline'>>,
     onInvalidated: (callback: () => void) => {
       ipcRenderer.on('agents:invalidated', callback)
