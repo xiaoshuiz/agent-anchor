@@ -17,17 +17,19 @@ const outPath = join(outDir, 'icon.png')
 const anchorRaw = readFileSync(svgPath, 'utf-8').replace('currentColor', '#3b82f6')
 const anchorInner = anchorRaw.replace(/<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
 
-// macOS-style: 1024x1024, squircle bg (radius ~18%), icon at ~72% with padding
+// macOS HIG: 1024 canvas, artwork 832px (13/16), padding 96px each side
+// https://developer.apple.com/design/human-interface-guidelines/app-icons
 const SIZE = 1024
-const PADDING = Math.round(0.14 * SIZE)  // ~14% padding - icon occupies ~72%
-const ICON_SIZE = SIZE - 2 * PADDING
-const RADIUS = 185  // squircle corner radius for 1024
+const PADDING = 96  // Apple: (1024-832)/2
+const ICON_SIZE = 832  // 13/16 of 1024
+const RADIUS = 185  // squircle corner radius
 const SCALE = ICON_SIZE / 24
+const STROKE = 1.2  // thinner stroke for cleaner Dock appearance
 
 const compositeSvg = [
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="${SIZE}" height="${SIZE}">`,
   `  <rect width="${SIZE}" height="${SIZE}" rx="${RADIUS}" ry="${RADIUS}" fill="#ffffff"/>`,
-  `  <g transform="translate(${PADDING}, ${PADDING}) scale(${SCALE})" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">`,
+  `  <g transform="translate(${PADDING}, ${PADDING}) scale(${SCALE})" fill="none" stroke="#3b82f6" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round">`,
   anchorInner.split('\n').map((l) => '    ' + l.trim()).filter(Boolean).join('\n'),
   '  </g>',
   '</svg>',
