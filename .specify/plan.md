@@ -23,3 +23,12 @@ agent-anchor/
 
 - electron-vite、electron、better-sqlite3
 - react、zustand、tailwindcss、lucide-react
+- @anthropic-ai/sdk（Phase 7 Claude 应用内）
+- @modelcontextprotocol/sdk（Phase 5 MCP）
+
+## Phase 7 补充
+
+- Claude API Key 配置：Settings 入口，electron-store (agent-keys)
+- 主进程 claude-responder 调用 Anthropic API
+- agents.provider：claude | websocket
+- @mention 支持多词名（parseMentions 正则扩展）

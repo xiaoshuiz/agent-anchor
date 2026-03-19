@@ -205,6 +205,35 @@ uvx --from git+https://github.com/github/spec-kit.git specify init . --ai claude
 4. **可选：MCP 协议兼容**
    - 若社区有 MCP Agent，可做桥接层
 
+### Phase 5：MCP 协议兼容（已完成）
+
+- Agent Anchor 作为 MCP Server，暴露 `anchor_list_channels`、`anchor_list_agents`、`anchor_send_message`
+- 端点：`http://127.0.0.1:8766/mcp`
+
+### Phase 6：Slack 对齐（已完成）
+
+- 应用内创建 Agent、Channel
+- Channel / DM / Activity 三分组
+- @me 消息提醒
+- UI 圆角、配色靠拢 Slack
+
+### Phase 7：Claude 应用内集成（已完成）
+
+1. **Claude 专用配置**
+   - Settings 入口（齿轮图标）
+   - Claude API Key 一次配置，所有 Claude agent 共用
+
+2. **应用内 Claude 对话**
+   - 主进程直接调用 Anthropic API，无需 shell
+   - DM 或 @mention 时自动回复
+
+3. **多 Claude agent**
+   - 支持多个不同名称和身份的 Claude agent
+   - agent.provider 字段（claude | websocket）
+
+4. **@mention 多词名**
+   - 支持 @Claude Writer、@Claude 写作助手 等
+
 ---
 
 ## 五、目录结构建议
