@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import Store from 'electron-store'
 import {
   initDb,
@@ -27,7 +27,17 @@ import { pushMentionToAgents, pushDmToAgent, getOnlineAgentIds } from './websock
 import { respondWithClaude } from './claude-responder'
 
 const uiStore = new Store<{ sidebarCollapsed?: boolean }>({ name: 'ui' })
-const agentKeysStore = new Store<Record<string, string>>({ name: 'agent-keys' })
+
+let _agentKeysStore: Store<Record<string, string>> | null = null
+function getAgentKeysStore(): Store<Record<string, string>> {
+  if (!_agentKeysStore) {
+    _agentKeysStore = new Store<Record<string, string>>({
+      name: 'agent-keys',
+      cwd: app.getPath('userData'),
+    })
+  }
+  return _agentKeysStore
+}
 
 let currentChannelId: string | null = null
 
@@ -56,7 +66,7 @@ export function registerMessagesInvalidateSender(sender: () => void): void {
 }
 
 export function getAgentApiKey(agentId: string): string | undefined {
-  return agentKeysStore.get(agentId)
+  return getAgentKeysStore().get(agentId)
 }
 
 export function handleNewMessageFromAgent(channelId: string): void {
@@ -149,16 +159,18 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('agents:setApiKey', async (_, agentId: string, apiKey: string) => {
+    const store = getAgentKeysStore()
     const trimmed = apiKey?.trim?.()
     if (!trimmed) {
-      agentKeysStore.delete(agentId)
+      store.delete(agentId)
       return
     }
-    agentKeysStore.set(agentId, trimmed)
+    store.set(agentId, trimmed)
   })
 
   ipcMain.handle('agents:hasApiKey', async (_, agentId: string) => {
-    return !!agentKeysStore.get(agentId)
+    const store = getAgentKeysStore()
+    return !!store.get(agentId)
   })
 
   ipcMain.handle(
@@ -178,7 +190,7 @@ export function registerIpcHandlers(): void {
       const name = (params.name ?? '').trim()
       if (!name) return { error: 'name is required' }
       const provider = params.provider ?? 'websocket'
-      if (provider === 'claude' && !agentKeysStore.get('claude')) {
+      if (provider === 'claude' && !getAgentKeysStore().get('claude')) {
         return { error: 'Configure Claude API key in Settings first' }
       }
       if (provider === 'websocket') {
@@ -250,7 +262,7 @@ export function registerIpcHandlers(): void {
         const ch = channel as { type?: string; dm_agent_id?: string }
         const dmAgentId = ch.type === 'dm' ? ch.dm_agent_id : null
         const mentionIds = mentions && mentions.length > 0 ? mentions : []
-        const claudeApiKey = agentKeysStore.get('claude')
+        const claudeApiKey = getAgentKeysStore().get('claude')
 
         const claudeAgents: Array<{ id: string; name: string; description: string | null }> = []
         if (dmAgentId) {
@@ -377,7 +389,7 @@ export function registerIpcHandlers(): void {
     const database = getDb()
     if (!database) return {}
     const agents = agentsList(database)
-    const claudeConfigured = !!agentKeysStore.get('claude')
+    const claudeConfigured = !!getAgentKeysStore().get('claude')
     const status: Record<string, 'online' | 'offline'> = {}
     for (const a of agents) {
       if (a.provider === 'claude' && claudeConfigured) {

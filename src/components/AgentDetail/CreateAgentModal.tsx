@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUIStore } from '@/stores/uiStore'
 
 interface CreateAgentModalProps {
   onClose: () => void
@@ -18,10 +19,11 @@ export function CreateAgentModal({ onClose, onCreated, onOpenSettings }: CreateA
   const [customId, setCustomId] = useState('')
   const [customName, setCustomName] = useState('')
   const [customDesc, setCustomDesc] = useState('')
+  const claudeConfigUpdatedTrigger = useUIStore((s) => s.claudeConfigUpdatedTrigger)
 
   useEffect(() => {
     window.electronAPI?.agents?.hasApiKey?.('claude').then(setHasClaudeKey)
-  }, [])
+  }, [claudeConfigUpdatedTrigger])
 
   const handleSubmitClaude = async (e: React.FormEvent) => {
     e.preventDefault()

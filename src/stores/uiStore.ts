@@ -9,6 +9,7 @@ interface UIState {
   messagesRefreshTrigger: number
   agentsRefreshTrigger: number
   channelsRefreshTrigger: number
+  claudeConfigUpdatedTrigger: number
   setSelectedChannel: (id: string | null) => void
   setSelectedActivityView: (view: 'mentions' | null) => void
   setSelectedThreadRoot: (id: string | null) => void
@@ -18,6 +19,7 @@ interface UIState {
   refreshMessages: () => void
   refreshAgents: () => void
   refreshChannels: () => void
+  refreshClaudeConfig: () => void
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -29,6 +31,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   messagesRefreshTrigger: 0,
   agentsRefreshTrigger: 0,
   channelsRefreshTrigger: 0,
+  claudeConfigUpdatedTrigger: 0,
   setSelectedChannel: (id) =>
     set({ selectedChannelId: id, selectedActivityView: null, selectedThreadRootId: null, mentionFilterAgentId: null }),
   setSelectedActivityView: (view) =>
@@ -38,6 +41,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   refreshMessages: () => set((s) => ({ messagesRefreshTrigger: s.messagesRefreshTrigger + 1 })),
   refreshAgents: () => set((s) => ({ agentsRefreshTrigger: s.agentsRefreshTrigger + 1 })),
   refreshChannels: () => set((s) => ({ channelsRefreshTrigger: s.channelsRefreshTrigger + 1 })),
+  refreshClaudeConfig: () => set((s) => ({ claudeConfigUpdatedTrigger: s.claudeConfigUpdatedTrigger + 1 })),
   setSidebarCollapsed: (collapsed) => {
     set({ sidebarCollapsed: collapsed })
     window.electronAPI?.sidebar?.setCollapsed?.(collapsed)
