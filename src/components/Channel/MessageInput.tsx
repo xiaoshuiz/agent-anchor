@@ -33,10 +33,8 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
     const lastAt = textBefore.lastIndexOf('@')
     if (lastAt >= 0) {
       const afterAt = textBefore.slice(lastAt + 1)
-      const spaceIdx = afterAt.indexOf(' ')
-      const query = spaceIdx >= 0 ? afterAt.slice(0, spaceIdx) : afterAt
       setShowMentionPopup(true)
-      setMentionQuery(query)
+      setMentionQuery(afterAt)
       setMentionIndex(0)
     } else {
       setShowMentionPopup(false)

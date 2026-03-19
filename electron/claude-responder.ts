@@ -6,13 +6,21 @@ import Anthropic from '@anthropic-ai/sdk'
 export async function respondWithClaude(
   apiKey: string,
   userContent: string,
-  context: { channelName?: string; isDm?: boolean }
+  context: {
+    channelName?: string
+    isDm?: boolean
+    agentName?: string
+    agentDescription?: string | null
+  }
 ): Promise<string> {
   const client = new Anthropic({ apiKey })
+  const identity = context.agentDescription
+    ? `You are ${context.agentName}. ${context.agentDescription}`
+    : `You are ${context.agentName} in Agent Anchor.`
   const system =
     context.isDm
-      ? 'You are Claude in Agent Anchor. The user is messaging you in a direct message. Reply concisely.'
-      : `You are Claude in Agent Anchor. Someone mentioned you in #${context.channelName ?? 'channel'}. Reply concisely.`
+      ? `${identity} The user is messaging you in a direct message. Reply concisely.`
+      : `${identity} Someone mentioned you in #${context.channelName ?? 'channel'}. Reply concisely.`
 
   const resp = await client.messages.create({
     model: 'claude-3-5-sonnet-20241022',

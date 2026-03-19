@@ -12,6 +12,7 @@ import {
   insertChannel,
   insertChannelMembers,
   getChannelById,
+  getAgentById,
   getOrCreateDm,
   getThreadCountByChannel,
   getMessageById,
@@ -142,7 +143,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('agents:get', async (_, id: string) => {
     const database = getDb()
     if (!database) return null
-    return database.prepare('SELECT * FROM agents WHERE id = ?').get(id) ?? null
+    const row = database.prepare('SELECT * FROM agents WHERE id = ?').get(id) as { provider?: string } | undefined
+    if (!row) return null
+    return { ...row, provider: row.provider === 'claude' ? 'claude' : 'websocket' }
   })
 
   ipcMain.handle('agents:setApiKey', async (_, agentId: string, apiKey: string) => {
@@ -162,20 +165,34 @@ export function registerIpcHandlers(): void {
     'agents:create',
     async (
       _,
-      params: { id: string; name: string; description?: string | null; capabilities?: string[] | string | null }
+      params: {
+        id?: string
+        name: string
+        description?: string | null
+        capabilities?: string[] | string | null
+        provider?: 'claude' | 'websocket'
+      }
     ): Promise<{ id: string } | { error: string }> => {
       const database = getDb()
       if (!database) return { error: 'Database not initialized' }
-      const id = (params.id ?? '').trim()
       const name = (params.name ?? '').trim()
-      if (!id || !name) return { error: 'id and name are required' }
-      if (!/^[a-zA-Z0-9_-]+$/.test(id)) return { error: 'id must be alphanumeric, underscore or hyphen only' }
+      if (!name) return { error: 'name is required' }
+      const provider = params.provider ?? 'websocket'
+      if (provider === 'claude' && !agentKeysStore.get('claude')) {
+        return { error: 'Configure Claude API key in Settings first' }
+      }
+      if (provider === 'websocket') {
+        const id = (params.id ?? '').trim()
+        if (!id) return { error: 'id is required for custom agents' }
+        if (!/^[a-zA-Z0-9_-]+$/.test(id)) return { error: 'id must be alphanumeric, underscore or hyphen only' }
+      }
       try {
         const agent = insertAgent(database, {
-          id,
+          id: params.id?.trim() || undefined,
           name,
           description: params.description?.trim() || null,
           capabilities: params.capabilities ?? null,
+          provider,
         })
         agentsInvalidateSender?.()
         return { id: agent.id }
@@ -235,16 +252,37 @@ export function registerIpcHandlers(): void {
         const mentionIds = mentions && mentions.length > 0 ? mentions : []
         const claudeApiKey = agentKeysStore.get('claude')
 
-        if (claudeApiKey && (dmAgentId === 'claude' || mentionIds.includes('claude'))) {
+        const claudeAgents: Array<{ id: string; name: string; description: string | null }> = []
+        if (dmAgentId) {
+          const agent = getAgentById(database, dmAgentId)
+          if (agent?.provider === 'claude') claudeAgents.push({ id: agent.id, name: agent.name, description: agent.description })
+        }
+        for (const mid of mentionIds) {
+          if (!claudeAgents.some((a) => a.id === mid)) {
+            const agent = getAgentById(database, mid)
+            if (agent?.provider === 'claude') claudeAgents.push({ id: agent.id, name: agent.name, description: agent.description })
+          }
+        }
+
+        const websocketAgentIds = new Set<string>()
+        if (dmAgentId && !claudeAgents.some((a) => a.id === dmAgentId)) websocketAgentIds.add(dmAgentId)
+        for (const mid of mentionIds) {
+          if (!claudeAgents.some((a) => a.id === mid)) websocketAgentIds.add(mid)
+        }
+
+        for (const agent of claudeAgents) {
+          if (!claudeApiKey) continue
           respondWithClaude(claudeApiKey, trimmed, {
             channelName: channel.name,
-            isDm: ch.type === 'dm',
+            isDm: ch.type === 'dm' && dmAgentId === agent.id,
+            agentName: agent.name,
+            agentDescription: agent.description,
           })
             .then((reply) => {
               insertMessage(database, {
                 channelId,
                 fromType: 'agent',
-                fromId: 'claude',
+                fromId: agent.id,
                 content: reply,
                 threadTs: threadTs ?? null,
                 mentions: null,
@@ -257,15 +295,17 @@ export function registerIpcHandlers(): void {
               insertMessage(database, {
                 channelId,
                 fromType: 'agent',
-                fromId: 'claude',
+                fromId: agent.id,
                 content: `Error: ${(e as Error).message}`,
                 threadTs: threadTs ?? null,
                 mentions: null,
               })
               messagesInvalidateSender?.()
             })
-        } else {
-          if (dmAgentId) {
+        }
+
+        if (websocketAgentIds.size > 0) {
+          if (dmAgentId && websocketAgentIds.has(dmAgentId)) {
             pushDmToAgent(dmAgentId, {
               messageId: msg.id,
               channelId,
@@ -276,7 +316,8 @@ export function registerIpcHandlers(): void {
               timestamp: msg.timestamp,
             })
           }
-          if (mentionIds.length > 0) {
+          const wsMentions = mentionIds.filter((id) => websocketAgentIds.has(id))
+          if (wsMentions.length > 0) {
             pushMentionToAgents({
               messageId: msg.id,
               channelId,
@@ -284,7 +325,7 @@ export function registerIpcHandlers(): void {
               fromType: 'user',
               fromId: 'user',
               content: trimmed,
-              mentions: mentionIds,
+              mentions: wsMentions,
               threadTs: msg.thread_ts,
               timestamp: msg.timestamp,
             })
@@ -336,9 +377,10 @@ export function registerIpcHandlers(): void {
     const database = getDb()
     if (!database) return {}
     const agents = agentsList(database)
+    const claudeConfigured = !!agentKeysStore.get('claude')
     const status: Record<string, 'online' | 'offline'> = {}
     for (const a of agents) {
-      if (a.id === 'claude' && agentKeysStore.get('claude')) {
+      if (a.provider === 'claude' && claudeConfigured) {
         status[a.id] = 'online'
       } else {
         status[a.id] = online.has(a.id) ? 'online' : 'offline'

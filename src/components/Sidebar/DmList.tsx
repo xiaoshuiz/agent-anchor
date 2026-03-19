@@ -5,7 +5,11 @@ import { useChannels } from '@/hooks/useChannels'
 import { useUIStore } from '@/stores/uiStore'
 import { CreateAgentModal } from '@/components/AgentDetail/CreateAgentModal'
 
-export function DmList() {
+interface DmListProps {
+  onOpenSettings?: () => void
+}
+
+export function DmList({ onOpenSettings }: DmListProps) {
   const { agents, loading } = useAgents()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const refreshAgents = useUIStore((s) => s.refreshAgents)
@@ -64,6 +68,7 @@ export function DmList() {
         <CreateAgentModal
           onClose={() => setShowCreateModal(false)}
           onCreated={() => refreshAgents()}
+          onOpenSettings={onOpenSettings ? () => { setShowCreateModal(false); onOpenSettings() } : undefined}
         />
       )}
     </div>

@@ -131,10 +131,10 @@ You can create Agents and Channels directly in the app (no WebSocket required fo
 
 Manage and chat with Claude directly in the app — no shell, fully in-app:
 
-1. Click **+ Add Agent**, then **Claude**
-2. Enter your Anthropic API key (from console.anthropic.com)
-3. Create — Claude is ready
-4. Open a DM or @Claude in any channel to chat
+1. **Settings** (gear icon) → configure Claude API key
+2. **+ Add Agent** → enter name (e.g. "Claude 写作助手"), optional identity description
+3. Create — agent is ready
+4. DM or @AgentName in any channel (supports multi-word names like @Claude Writer)
 
 ---
 

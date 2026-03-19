@@ -14,6 +14,7 @@ export interface Agent {
   avatar?: string
   capabilities?: string[]
   created_at: number
+  provider?: 'claude' | 'websocket'
 }
 
 export interface Message {
@@ -48,7 +49,13 @@ export interface ElectronAPI {
   agents: {
     list: () => Promise<Agent[]>
     get: (id: string) => Promise<Agent | null>
-    create?: (params: { id: string; name: string; description?: string | null; capabilities?: string[] | string | null }) => Promise<{ id: string } | { error: string }>
+    create?: (params: {
+      id?: string
+      name: string
+      description?: string | null
+      capabilities?: string[] | string | null
+      provider?: 'claude' | 'websocket'
+    }) => Promise<{ id: string } | { error: string }>
     setApiKey?: (agentId: string, apiKey: string) => Promise<void>
     hasApiKey?: (agentId: string) => Promise<boolean>
     getStatus?: () => Promise<Record<string, 'online' | 'offline'>>
