@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUIStore } from '@/stores/uiStore'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -8,6 +9,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const [claudeKey, setClaudeKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [saved, setSaved] = useState(false)
+  const refreshClaudeConfig = useUIStore((s) => s.refreshClaudeConfig)
 
   useEffect(() => {
     window.electronAPI?.agents?.hasApiKey?.('claude').then(setHasKey)
@@ -20,6 +22,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       setHasKey(true)
       setSaved(true)
       setClaudeKey('')
+      refreshClaudeConfig()
     }
     setTimeout(() => setSaved(false), 2000)
   }

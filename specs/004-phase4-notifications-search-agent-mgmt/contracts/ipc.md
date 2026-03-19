@@ -31,6 +31,9 @@ interface SearchResult {
 - `agents:getStatus()` → `Promise<Record<string, 'online' | 'offline'>>`  
   返回 `{ [agentId]: status }`
 
+- `agents:setApiKey(agentId, apiKey)` → `Promise<void>`（Phase 7）
+- `agents:hasApiKey(agentId)` → `Promise<boolean>`（Phase 7）
+
 ### Events (optional)
 
 - `unread:invalidated` — 未读变化时通知渲染进程

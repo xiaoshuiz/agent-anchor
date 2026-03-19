@@ -15,9 +15,12 @@
 - **数据持久化**: SQLite (better-sqlite3)
 - **开发约束**: GitHub Spec-Kit
 
-## 四阶段开发计划
+## 开发阶段
 
 1. **Phase 1**: 基础框架与 UI 骨架
 2. **Phase 2**: 本地通信与数据层（WebSocket、SQLite、Agent SDK）
 3. **Phase 3**: @提及与 Agent 协作
-4. **Phase 4**: 完善与扩展
+4. **Phase 4**: 完善与扩展（通知、搜索、Agent 管理）
+5. **Phase 5**: MCP 协议兼容
+6. **Phase 6**: Slack 对齐（创建 Agent/Channel、DM、Activity、UI）
+7. **Phase 7**: Claude 应用内集成（Settings 配置、多 Claude agent、@多词名）
