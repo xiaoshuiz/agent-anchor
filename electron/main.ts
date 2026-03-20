@@ -15,7 +15,9 @@ function getIconPath(): string {
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
-  const preloadPath = join(__dirname, '../preload/preload.mjs')
+  const preloadPath = app.isPackaged
+    ? join(app.getAppPath(), 'out/preload/preload.mjs')
+    : join(__dirname, '../preload/preload.mjs')
   const iconPath = getIconPath()
   mainWindow = new BrowserWindow({
     width: 1200,
