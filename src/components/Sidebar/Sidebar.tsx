@@ -11,6 +11,9 @@ export function Sidebar() {
   const setSidebarCollapsed = useUIStore((s) => s.setSidebarCollapsed)
   const selectedActivityView = useUIStore((s) => s.selectedActivityView)
   const setSelectedActivityView = useUIStore((s) => s.setSelectedActivityView)
+  const openAddAgentAfterSettingsClose = useUIStore((s) => s.openAddAgentAfterSettingsClose)
+  const setShowCreateAgentModal = useUIStore((s) => s.setShowCreateAgentModal)
+  const setOpenAddAgentAfterSettingsClose = useUIStore((s) => s.setOpenAddAgentAfterSettingsClose)
   const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
@@ -34,7 +37,26 @@ export function Sidebar() {
         </button>
         <CollapseButton />
       </div>
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showSettings && (
+        <SettingsModal
+          onClose={() => {
+            setShowSettings(false)
+            if (openAddAgentAfterSettingsClose) {
+              setShowCreateAgentModal(true)
+              setOpenAddAgentAfterSettingsClose(false)
+            }
+          }}
+          onSaveSuccess={
+            openAddAgentAfterSettingsClose
+              ? () => {
+                  setShowSettings(false)
+                  setShowCreateAgentModal(true)
+                  setOpenAddAgentAfterSettingsClose(false)
+                }
+              : undefined
+          }
+        />
+      )}
       <nav className="flex-1 overflow-y-auto p-2">
         {!collapsed && (
           <>

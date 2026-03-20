@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useAgents } from '@/hooks/useAgents'
 import { useChannels } from '@/hooks/useChannels'
@@ -11,7 +10,9 @@ interface DmListProps {
 
 export function DmList({ onOpenSettings }: DmListProps) {
   const { agents, loading } = useAgents()
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const showCreateModal = useUIStore((s) => s.showCreateAgentModal)
+  const setShowCreateModal = useUIStore((s) => s.setShowCreateAgentModal)
+  const setOpenAddAgentAfterSettingsClose = useUIStore((s) => s.setOpenAddAgentAfterSettingsClose)
   const refreshAgents = useUIStore((s) => s.refreshAgents)
   const selectedChannelId = useUIStore((s) => s.selectedChannelId)
   const setSelectedChannel = useUIStore((s) => s.setSelectedChannel)
@@ -68,7 +69,15 @@ export function DmList({ onOpenSettings }: DmListProps) {
         <CreateAgentModal
           onClose={() => setShowCreateModal(false)}
           onCreated={() => refreshAgents()}
-          onOpenSettings={onOpenSettings ? () => { setShowCreateModal(false); onOpenSettings() } : undefined}
+          onOpenSettings={
+            onOpenSettings
+              ? () => {
+                  setShowCreateModal(false)
+                  setOpenAddAgentAfterSettingsClose(true)
+                  onOpenSettings()
+                }
+              : undefined
+          }
         />
       )}
     </div>

@@ -3,9 +3,10 @@ import { useUIStore } from '@/stores/uiStore'
 
 interface SettingsModalProps {
   onClose: () => void
+  onSaveSuccess?: () => void
 }
 
-export function SettingsModal({ onClose }: SettingsModalProps) {
+export function SettingsModal({ onClose, onSaveSuccess }: SettingsModalProps) {
   const [claudeKey, setClaudeKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -24,6 +25,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       setSaved(true)
       setClaudeKey('')
       refreshClaudeConfig()
+      if (verified && onSaveSuccess) {
+        onSaveSuccess()
+      }
     }
     setTimeout(() => setSaved(false), 2000)
   }

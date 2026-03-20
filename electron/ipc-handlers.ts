@@ -1,7 +1,7 @@
 import { ipcMain, app } from 'electron'
 import Store from 'electron-store'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { join, dirname } from 'path'
 import {
   initDb,
   seedGeneralIfEmpty,
@@ -56,7 +56,10 @@ function loadAgentKeys(): Record<string, string> {
 }
 
 function saveAgentKeys(data: Record<string, string>): void {
-  writeFileSync(getAgentKeysPath(), JSON.stringify(data, null, 0), 'utf-8')
+  const path = getAgentKeysPath()
+  const dir = dirname(path)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  writeFileSync(path, JSON.stringify(data, null, 0), 'utf-8')
 }
 
 function getAgentKeysStore(): { get: (id: string) => string | undefined; set: (id: string, value: string) => void; delete: (id: string) => void } {
