@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Notification } from 'electron'
 import { join } from 'path'
+import { existsSync } from 'fs'
 import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, registerAgentsInvalidateSender, registerMessagesInvalidateSender, getCurrentChannelId } from './ipc-handlers'
 import { log } from './logger'
 import { startWebSocketServer } from './websocket-server'
@@ -15,9 +16,14 @@ function getIconPath(): string {
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
-  const preloadPath = app.isPackaged
-    ? join(app.getAppPath(), 'out/preload/preload.mjs')
-    : join(__dirname, '../preload/preload.mjs')
+  let preloadPath: string
+  if (app.isPackaged) {
+    const fromResources = join(process.resourcesPath, 'preload/preload.cjs')
+    const fromAsar = join(app.getAppPath(), 'out/preload/preload.cjs')
+    preloadPath = existsSync(fromResources) ? fromResources : fromAsar
+  } else {
+    preloadPath = join(__dirname, '../preload/preload.cjs')
+  }
   const iconPath = getIconPath()
   mainWindow = new BrowserWindow({
     width: 1200,

@@ -31,6 +31,12 @@
   "build": {
     "appId": "com.agent-anchor.app",
     "productName": "Agent Anchor",
+    "extraResources": [
+      {
+        "from": "out/preload/preload.cjs",
+        "to": "preload/preload.cjs"
+      }
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
@@ -47,6 +53,7 @@
     }
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@resvg/resvg-js": "^2.6.2",
     "@types/better-sqlite3": "^7.6.11",
     "@types/react": "^18.3.12",
