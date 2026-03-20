@@ -25,13 +25,14 @@ function formatTime(): string {
 }
 
 function write(level: string, tag: string, message: string, data?: unknown): void {
+  const dataStr = data !== undefined ? ` ${JSON.stringify(data)}` : ''
+  const line = `${formatTime()} [${level}] [${tag}] ${message}${dataStr}\n`
   try {
     const path = getLogPath()
-    const dataStr = data !== undefined ? ` ${JSON.stringify(data)}` : ''
-    const line = `${formatTime()} [${level}] [${tag}] ${message}${dataStr}\n`
     appendFileSync(path, line, 'utf-8')
   } catch (e) {
     console.error('[Logger] write failed:', e)
+    console.log(line.trim())
   }
 }
 

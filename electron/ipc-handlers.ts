@@ -39,7 +39,7 @@ function getAgentKeysPath(): string {
 
 function loadAgentKeys(): Record<string, string> {
   const path = getAgentKeysPath()
-  appLog('agent-keys', 'loadAgentKeys', { path, exists: existsSync(path) })
+  appLog.info('agent-keys', 'loadAgentKeys', { path, exists: existsSync(path) })
   if (!existsSync(path)) return {}
   try {
     const raw = readFileSync(path, 'utf-8')
@@ -49,11 +49,11 @@ function loadAgentKeys(): Record<string, string> {
       for (const [k, v] of Object.entries(data)) {
         if (typeof v === 'string') out[k] = v
       }
-      appLog('agent-keys', 'loadAgentKeys result', { keys: Object.keys(out), keyCount: Object.keys(out).length })
+      appLog.info('agent-keys', 'loadAgentKeys result', { keys: Object.keys(out), keyCount: Object.keys(out).length })
       return out
     }
   } catch (e) {
-    appLog('agent-keys', 'loadAgentKeys parse error', { error: String(e) })
+    appLog.info('agent-keys', 'loadAgentKeys parse error', { error: String(e) })
   }
   return {}
 }
@@ -61,13 +61,13 @@ function loadAgentKeys(): Record<string, string> {
 function saveAgentKeys(data: Record<string, string>): void {
   const path = getAgentKeysPath()
   const dir = dirname(path)
-  appLog('agent-keys', 'saveAgentKeys', { path, dir, keys: Object.keys(data) })
+  appLog.info('agent-keys', 'saveAgentKeys', { path, dir, keys: Object.keys(data) })
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
-    appLog('agent-keys', 'saveAgentKeys created dir', { dir })
+    appLog.info('agent-keys', 'saveAgentKeys created dir', { dir })
   }
   writeFileSync(path, JSON.stringify(data, null, 0), 'utf-8')
-  appLog('agent-keys', 'saveAgentKeys done')
+  appLog.info('agent-keys', 'saveAgentKeys done')
 }
 
 function getAgentKeysStore(): { get: (id: string) => string | undefined; set: (id: string, value: string) => void; delete: (id: string) => void } {
@@ -208,22 +208,22 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('agents:setApiKey', async (_, agentId: string, apiKey: string) => {
-    appLog('ipc', 'agents:setApiKey called', { agentId, keyLength: apiKey?.length ?? 0 })
+    appLog.info('ipc', 'agents:setApiKey called', { agentId, keyLength: apiKey?.length ?? 0 })
     const store = getAgentKeysStore()
     const trimmed = apiKey?.trim?.()
     if (!trimmed) {
       store.delete(agentId)
-      appLog('ipc', 'agents:setApiKey deleted', { agentId })
+      appLog.info('ipc', 'agents:setApiKey deleted', { agentId })
       return
     }
     store.set(agentId, trimmed)
-    appLog('ipc', 'agents:setApiKey saved', { agentId })
+    appLog.info('ipc', 'agents:setApiKey saved', { agentId })
   })
 
   ipcMain.handle('agents:hasApiKey', async (_, agentId: string) => {
     const store = getAgentKeysStore()
     const has = !!store.get(agentId)
-    appLog('ipc', 'agents:hasApiKey', { agentId, result: has })
+    appLog.info('ipc', 'agents:hasApiKey', { agentId, result: has })
     return has
   })
 
@@ -245,9 +245,9 @@ export function registerIpcHandlers(): void {
       if (!name) return { error: 'name is required' }
       const provider = params.provider ?? 'websocket'
       const claudeKey = getAgentKeysStore().get('claude')
-      appLog('ipc', 'agents:create', { name, provider, hasClaudeKey: !!claudeKey })
+      appLog.info('ipc', 'agents:create', { name, provider, hasClaudeKey: !!claudeKey })
       if (provider === 'claude' && !claudeKey) {
-        appLog('ipc', 'agents:create rejected', { reason: 'no claude key' })
+        appLog.info('ipc', 'agents:create rejected', { reason: 'no claude key' })
         return { error: 'Configure Claude API key in Settings first' }
       }
       if (provider === 'websocket') {
@@ -264,10 +264,10 @@ export function registerIpcHandlers(): void {
           provider,
         })
         agentsInvalidateSender?.()
-        appLog('ipc', 'agents:create success', { id: agent.id })
+        appLog.info('ipc', 'agents:create success', { id: agent.id })
         return { id: agent.id }
       } catch (e) {
-        appLog('ipc', 'agents:create error', { error: String(e) })
+        appLog.info('ipc', 'agents:create error', { error: String(e) })
         return { error: String(e) }
       }
     }
@@ -436,7 +436,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:openLogsFolder', async () => {
     const dir = getLogsDir()
-    appLog('ipc', 'app:openLogsFolder', { dir })
+    appLog.info('ipc', 'app:openLogsFolder', { dir })
     await shell.openPath(dir)
   })
 
