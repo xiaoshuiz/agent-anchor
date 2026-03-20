@@ -11,9 +11,18 @@ const LOG_FILE = 'agent-anchor.log'
 
 let _logPath: string | null = null
 
+function getBaseDir(): string {
+  try {
+    return app.getPath('userData')
+  } catch {
+    return process.cwd()
+  }
+}
+
 function getLogPath(): string {
   if (!_logPath) {
-    const dir = join(app.getPath('userData'), LOG_DIR)
+    const base = getBaseDir()
+    const dir = join(base, LOG_DIR)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
     _logPath = join(dir, LOG_FILE)
   }
@@ -48,7 +57,7 @@ export function getLogFilePath(): string {
 }
 
 export function getLogsDir(): string {
-  return join(app.getPath('userData'), LOG_DIR)
+  return join(getBaseDir(), LOG_DIR)
 }
 
 export function readLogContent(): string {

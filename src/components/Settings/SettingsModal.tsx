@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/uiStore'
-import { logger } from '@/utils/logger'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -11,36 +10,41 @@ export function SettingsModal({ onClose, onSaveSuccess }: SettingsModalProps) {
   const [claudeKey, setClaudeKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [logsPath, setLogsPath] = useState<string>('')
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null)
   const refreshClaudeConfig = useUIStore((s) => s.refreshClaudeConfig)
 
   useEffect(() => {
-    logger.info('Settings', 'modal opened, fetching hasKey')
     window.electronAPI?.app?.getLogsPath?.().then(setLogsPath)
-    window.electronAPI?.agents?.hasApiKey?.('claude').then((v) => {
-      logger.info('Settings', 'hasApiKey result', { hasKey: v })
-      setHasKey(v)
-    })
+    window.electronAPI?.agents?.hasApiKey?.('claude').then(setHasKey)
   }, [])
 
   const handleSave = async () => {
     const trimmed = claudeKey.trim()
-    logger.info('Settings', 'handleSave', { hasKey: !!trimmed })
-    if (trimmed) {
-      await window.electronAPI?.agents?.setApiKey?.('claude', trimmed)
-      logger.info('Settings', 'setApiKey done, verifying')
+    setSaveError(null)
+    if (!trimmed) return
+    if (!window.electronAPI?.agents?.setApiKey) {
+      setSaveError('IPC 不可用，请重启应用')
+      return
+    }
+    try {
+      await window.electronAPI.agents.setApiKey('claude', trimmed)
       const verified = await window.electronAPI?.agents?.hasApiKey?.('claude')
-      logger.info('Settings', 'verify hasApiKey', { verified })
       setHasKey(!!verified)
       setSaved(true)
       setClaudeKey('')
       refreshClaudeConfig()
-      if (verified && onSaveSuccess) {
-        logger.info('Settings', 'calling onSaveSuccess')
-        onSaveSuccess()
-      }
+      if (verified && onSaveSuccess) onSaveSuccess()
+    } catch (e) {
+      setSaveError(String(e))
     }
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleShowDiagnostics = async () => {
+    const d = await window.electronAPI?.app?.getDiagnostics?.()
+    setDiagnostics(d ?? null)
   }
 
   return (
@@ -91,6 +95,24 @@ export function SettingsModal({ onClose, onSaveSuccess }: SettingsModalProps) {
             <p className="mt-1 text-xs text-slate-500">
               从 <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">console.anthropic.com</a> 获取
             </p>
+            {saveError && <p className="mt-1 text-xs text-red-500">{saveError}</p>}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              诊断
+            </h3>
+            <button
+              type="button"
+              onClick={handleShowDiagnostics}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 mb-2"
+            >
+              查看诊断信息
+            </button>
+            {diagnostics && (
+              <pre className="text-xs font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 p-2 rounded overflow-auto max-h-32">
+                {JSON.stringify(diagnostics, null, 2)}
+              </pre>
+            )}
           </div>
           <div>
             <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">

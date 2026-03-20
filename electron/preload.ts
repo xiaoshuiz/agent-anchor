@@ -7,6 +7,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('app:log', level, tag, message, data),
     getLogsPath: () => ipcRenderer.invoke('app:getLogsPath') as Promise<string>,
     readLogs: () => ipcRenderer.invoke('app:readLogs') as Promise<string>,
+    getDiagnostics: () =>
+      ipcRenderer.invoke('app:diagnostics') as Promise<{
+        userData: string
+        agentKeysPath: string
+        agentKeysExists: boolean
+        logsPath: string
+        logsExists: boolean
+        hasClaudeKey: boolean
+      }>,
     openLogsFolder: () => ipcRenderer.invoke('app:openLogsFolder') as Promise<void>,
   },
   channels: {

@@ -75,7 +75,11 @@ function onNewMessage(channelId: string, mentions?: string[]): void {
 }
 
 app.whenReady().then(() => {
-  log.info('app', 'Agent Anchor starting', { userData: app.getPath('userData') })
+  try {
+    log.info('app', 'Agent Anchor starting', { userData: app.getPath('userData') })
+  } catch {
+    // ignore logger init failure
+  }
   initDbAndHandlers()
   registerUnreadInvalidateSender(notifyUnreadRefresh)
   registerAgentsInvalidateSender(notifyAgentsRefresh)

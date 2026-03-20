@@ -40,6 +40,14 @@ export interface ElectronAPI {
     log?: (level: string, tag: string, message: string, data?: unknown) => Promise<void>
     getLogsPath?: () => Promise<string>
     readLogs?: () => Promise<string>
+    getDiagnostics?: () => Promise<{
+      userData: string
+      agentKeysPath: string
+      agentKeysExists: boolean
+      logsPath: string
+      logsExists: boolean
+      hasClaudeKey: boolean
+    }>
     openLogsFolder?: () => Promise<void>
   }
   channels: {
