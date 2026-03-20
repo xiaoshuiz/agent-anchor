@@ -1,5 +1,7 @@
 import { ipcMain, app } from 'electron'
 import Store from 'electron-store'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { join } from 'path'
 import {
   initDb,
   seedGeneralIfEmpty,
@@ -28,15 +30,51 @@ import { respondWithClaude } from './claude-responder'
 
 const uiStore = new Store<{ sidebarCollapsed?: boolean }>({ name: 'ui' })
 
-let _agentKeysStore: Store<Record<string, string>> | null = null
-function getAgentKeysStore(): Store<Record<string, string>> {
-  if (!_agentKeysStore) {
-    _agentKeysStore = new Store<Record<string, string>>({
-      name: 'agent-keys',
-      cwd: app.getPath('userData'),
-    })
+const AGENT_KEYS_FILE = 'agent-keys.json'
+
+function getAgentKeysPath(): string {
+  return join(app.getPath('userData'), AGENT_KEYS_FILE)
+}
+
+function loadAgentKeys(): Record<string, string> {
+  const path = getAgentKeysPath()
+  if (!existsSync(path)) return {}
+  try {
+    const raw = readFileSync(path, 'utf-8')
+    const data = JSON.parse(raw) as unknown
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const out: Record<string, string> = {}
+      for (const [k, v] of Object.entries(data)) {
+        if (typeof v === 'string') out[k] = v
+      }
+      return out
+    }
+  } catch {
+    // ignore parse errors, return empty
   }
-  return _agentKeysStore
+  return {}
+}
+
+function saveAgentKeys(data: Record<string, string>): void {
+  writeFileSync(getAgentKeysPath(), JSON.stringify(data, null, 0), 'utf-8')
+}
+
+function getAgentKeysStore(): { get: (id: string) => string | undefined; set: (id: string, value: string) => void; delete: (id: string) => void } {
+  return {
+    get(id: string): string | undefined {
+      return loadAgentKeys()[id]
+    },
+    set(id: string, value: string): void {
+      const data = loadAgentKeys()
+      data[id] = value
+      saveAgentKeys(data)
+    },
+    delete(id: string): void {
+      const data = loadAgentKeys()
+      delete data[id]
+      saveAgentKeys(data)
+    },
+  }
 }
 
 let currentChannelId: string | null = null

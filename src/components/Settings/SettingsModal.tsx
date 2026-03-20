@@ -19,7 +19,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     const trimmed = claudeKey.trim()
     if (trimmed) {
       await window.electronAPI?.agents?.setApiKey?.('claude', trimmed)
-      setHasKey(true)
+      const verified = await window.electronAPI?.agents?.hasApiKey?.('claude')
+      setHasKey(!!verified)
       setSaved(true)
       setClaudeKey('')
       refreshClaudeConfig()
