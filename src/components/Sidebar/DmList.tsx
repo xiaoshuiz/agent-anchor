@@ -3,6 +3,7 @@ import { useAgents } from '@/hooks/useAgents'
 import { useChannels } from '@/hooks/useChannels'
 import { useUIStore } from '@/stores/uiStore'
 import { CreateAgentModal } from '@/components/AgentDetail/CreateAgentModal'
+import { logger } from '@/utils/logger'
 
 interface DmListProps {
   onOpenSettings?: () => void
@@ -42,7 +43,10 @@ export function DmList({ onOpenSettings }: DmListProps) {
     <div className="space-y-0.5">
       <button
         type="button"
-        onClick={() => setShowCreateModal(true)}
+        onClick={() => {
+          logger.info('DmList', 'Add Agent clicked')
+          setShowCreateModal(true)
+        }}
         className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white transition-colors text-sm"
       >
         <Plus className="w-4 h-4 shrink-0" />
@@ -72,6 +76,7 @@ export function DmList({ onOpenSettings }: DmListProps) {
           onOpenSettings={
             onOpenSettings
               ? () => {
+                  logger.info('DmList', 'openSettings from Add Agent')
                   setShowCreateModal(false)
                   setOpenAddAgentAfterSettingsClose(true)
                   onOpenSettings()

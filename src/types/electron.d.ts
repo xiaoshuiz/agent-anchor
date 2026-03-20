@@ -37,6 +37,9 @@ export interface SearchResult {
 export interface ElectronAPI {
   app?: {
     setCurrentChannel: (channelId: string | null) => Promise<void>
+    log?: (level: string, tag: string, message: string, data?: unknown) => Promise<void>
+    getLogsPath?: () => Promise<string>
+    openLogsFolder?: () => Promise<void>
   }
   channels: {
     list: () => Promise<Channel[]>

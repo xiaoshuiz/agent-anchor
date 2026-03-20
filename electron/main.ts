@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Notification } from 'electron'
 import { join } from 'path'
 import { initDbAndHandlers, handleNewMessageFromAgent, registerUnreadInvalidateSender, registerAgentsInvalidateSender, registerMessagesInvalidateSender, getCurrentChannelId } from './ipc-handlers'
+import { log } from './logger'
 import { startWebSocketServer } from './websocket-server'
 import { startMcpServer } from './mcp-server'
 import { getDb } from './db'
@@ -74,6 +75,7 @@ function onNewMessage(channelId: string, mentions?: string[]): void {
 }
 
 app.whenReady().then(() => {
+  log.info('app', 'Agent Anchor starting', { userData: app.getPath('userData') })
   initDbAndHandlers()
   registerUnreadInvalidateSender(notifyUnreadRefresh)
   registerAgentsInvalidateSender(notifyAgentsRefresh)

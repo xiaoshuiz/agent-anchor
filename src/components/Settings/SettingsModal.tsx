@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/uiStore'
+import { logger } from '@/utils/logger'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -10,22 +11,32 @@ export function SettingsModal({ onClose, onSaveSuccess }: SettingsModalProps) {
   const [claudeKey, setClaudeKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [logsPath, setLogsPath] = useState<string>('')
   const refreshClaudeConfig = useUIStore((s) => s.refreshClaudeConfig)
 
   useEffect(() => {
-    window.electronAPI?.agents?.hasApiKey?.('claude').then(setHasKey)
+    logger.info('Settings', 'modal opened, fetching hasKey')
+    window.electronAPI?.app?.getLogsPath?.().then(setLogsPath)
+    window.electronAPI?.agents?.hasApiKey?.('claude').then((v) => {
+      logger.info('Settings', 'hasApiKey result', { hasKey: v })
+      setHasKey(v)
+    })
   }, [])
 
   const handleSave = async () => {
     const trimmed = claudeKey.trim()
+    logger.info('Settings', 'handleSave', { hasKey: !!trimmed })
     if (trimmed) {
       await window.electronAPI?.agents?.setApiKey?.('claude', trimmed)
+      logger.info('Settings', 'setApiKey done, verifying')
       const verified = await window.electronAPI?.agents?.hasApiKey?.('claude')
+      logger.info('Settings', 'verify hasApiKey', { verified })
       setHasKey(!!verified)
       setSaved(true)
       setClaudeKey('')
       refreshClaudeConfig()
       if (verified && onSaveSuccess) {
+        logger.info('Settings', 'calling onSaveSuccess')
         onSaveSuccess()
       }
     }
@@ -80,6 +91,26 @@ export function SettingsModal({ onClose, onSaveSuccess }: SettingsModalProps) {
             <p className="mt-1 text-xs text-slate-500">
               从 <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">console.anthropic.com</a> 获取
             </p>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              日志
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              所有行为记录在本地，便于排查问题。
+            </p>
+            {logsPath && (
+              <p className="text-xs text-slate-600 dark:text-slate-400 font-mono mb-2 break-all">
+                {logsPath}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => window.electronAPI?.app?.openLogsFolder?.()}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              打开日志文件夹
+            </button>
           </div>
           <div className="flex justify-end gap-2">
             <button

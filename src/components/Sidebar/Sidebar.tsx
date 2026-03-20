@@ -4,6 +4,7 @@ import { DmList } from './DmList'
 import { CollapseButton } from './CollapseButton'
 import { SettingsModal } from '@/components/Settings/SettingsModal'
 import { useUIStore } from '@/stores/uiStore'
+import { logger } from '@/utils/logger'
 import { AtSign, Settings } from 'lucide-react'
 
 export function Sidebar() {
@@ -29,7 +30,10 @@ export function Sidebar() {
       <div className="p-2 border-b border-slate-700 flex items-center justify-end gap-1 shrink-0">
         <button
           type="button"
-          onClick={() => setShowSettings(true)}
+          onClick={() => {
+            logger.info('Sidebar', 'Settings opened from gear')
+            setShowSettings(true)
+          }}
           className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
           aria-label="Settings"
         >
@@ -67,7 +71,12 @@ export function Sidebar() {
             <div className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1 mt-4">
               Direct Messages
             </div>
-            <DmList onOpenSettings={() => setShowSettings(true)} />
+            <DmList
+              onOpenSettings={() => {
+                logger.info('Sidebar', 'Settings opened from Add Agent flow')
+                setShowSettings(true)
+              }}
+            />
             <div className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1 mt-4">
               Activity
             </div>

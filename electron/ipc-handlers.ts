@@ -1,7 +1,8 @@
-import { ipcMain, app } from 'electron'
+import { ipcMain, app, shell } from 'electron'
 import Store from 'electron-store'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
+import { log as appLog, getLogsDir } from './logger'
 import {
   initDb,
   seedGeneralIfEmpty,
@@ -38,6 +39,7 @@ function getAgentKeysPath(): string {
 
 function loadAgentKeys(): Record<string, string> {
   const path = getAgentKeysPath()
+  appLog('agent-keys', 'loadAgentKeys', { path, exists: existsSync(path) })
   if (!existsSync(path)) return {}
   try {
     const raw = readFileSync(path, 'utf-8')
@@ -47,10 +49,11 @@ function loadAgentKeys(): Record<string, string> {
       for (const [k, v] of Object.entries(data)) {
         if (typeof v === 'string') out[k] = v
       }
+      appLog('agent-keys', 'loadAgentKeys result', { keys: Object.keys(out), keyCount: Object.keys(out).length })
       return out
     }
-  } catch {
-    // ignore parse errors, return empty
+  } catch (e) {
+    appLog('agent-keys', 'loadAgentKeys parse error', { error: String(e) })
   }
   return {}
 }
@@ -58,8 +61,13 @@ function loadAgentKeys(): Record<string, string> {
 function saveAgentKeys(data: Record<string, string>): void {
   const path = getAgentKeysPath()
   const dir = dirname(path)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  appLog('agent-keys', 'saveAgentKeys', { path, dir, keys: Object.keys(data) })
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+    appLog('agent-keys', 'saveAgentKeys created dir', { dir })
+  }
   writeFileSync(path, JSON.stringify(data, null, 0), 'utf-8')
+  appLog('agent-keys', 'saveAgentKeys done')
 }
 
 function getAgentKeysStore(): { get: (id: string) => string | undefined; set: (id: string, value: string) => void; delete: (id: string) => void } {
@@ -200,18 +208,23 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('agents:setApiKey', async (_, agentId: string, apiKey: string) => {
+    appLog('ipc', 'agents:setApiKey called', { agentId, keyLength: apiKey?.length ?? 0 })
     const store = getAgentKeysStore()
     const trimmed = apiKey?.trim?.()
     if (!trimmed) {
       store.delete(agentId)
+      appLog('ipc', 'agents:setApiKey deleted', { agentId })
       return
     }
     store.set(agentId, trimmed)
+    appLog('ipc', 'agents:setApiKey saved', { agentId })
   })
 
   ipcMain.handle('agents:hasApiKey', async (_, agentId: string) => {
     const store = getAgentKeysStore()
-    return !!store.get(agentId)
+    const has = !!store.get(agentId)
+    appLog('ipc', 'agents:hasApiKey', { agentId, result: has })
+    return has
   })
 
   ipcMain.handle(
@@ -231,7 +244,10 @@ export function registerIpcHandlers(): void {
       const name = (params.name ?? '').trim()
       if (!name) return { error: 'name is required' }
       const provider = params.provider ?? 'websocket'
-      if (provider === 'claude' && !getAgentKeysStore().get('claude')) {
+      const claudeKey = getAgentKeysStore().get('claude')
+      appLog('ipc', 'agents:create', { name, provider, hasClaudeKey: !!claudeKey })
+      if (provider === 'claude' && !claudeKey) {
+        appLog('ipc', 'agents:create rejected', { reason: 'no claude key' })
         return { error: 'Configure Claude API key in Settings first' }
       }
       if (provider === 'websocket') {
@@ -248,8 +264,10 @@ export function registerIpcHandlers(): void {
           provider,
         })
         agentsInvalidateSender?.()
+        appLog('ipc', 'agents:create success', { id: agent.id })
         return { id: agent.id }
       } catch (e) {
+        appLog('ipc', 'agents:create error', { error: String(e) })
         return { error: String(e) }
       }
     }
@@ -404,6 +422,21 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:setCurrentChannel', (_, channelId: string | null) => {
     setCurrentChannelId(channelId)
+  })
+
+  ipcMain.handle('app:log', (_, level: string, tag: string, message: string, data?: unknown) => {
+    if (level === 'warn') appLog.warn(tag, message, data)
+    else if (level === 'error') appLog.error(tag, message, data)
+    else if (level === 'debug') appLog.debug(tag, message, data)
+    else appLog.info(tag, message, data)
+  })
+
+  ipcMain.handle('app:getLogsPath', () => getLogsDir())
+
+  ipcMain.handle('app:openLogsFolder', async () => {
+    const dir = getLogsDir()
+    appLog('ipc', 'app:openLogsFolder', { dir })
+    await shell.openPath(dir)
   })
 
   ipcMain.handle('unread:get', async () => {

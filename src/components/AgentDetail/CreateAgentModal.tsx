@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/uiStore'
+import { logger } from '@/utils/logger'
 
 interface CreateAgentModalProps {
   onClose: () => void
@@ -22,7 +23,11 @@ export function CreateAgentModal({ onClose, onCreated, onOpenSettings }: CreateA
   const claudeConfigUpdatedTrigger = useUIStore((s) => s.claudeConfigUpdatedTrigger)
 
   useEffect(() => {
-    window.electronAPI?.agents?.hasApiKey?.('claude').then(setHasClaudeKey)
+    logger.info('CreateAgentModal', 'fetching hasApiKey', { trigger: claudeConfigUpdatedTrigger })
+    window.electronAPI?.agents?.hasApiKey?.('claude').then((v) => {
+      logger.info('CreateAgentModal', 'hasApiKey result', { hasClaudeKey: v })
+      setHasClaudeKey(v)
+    })
   }, [claudeConfigUpdatedTrigger])
 
   const handleSubmitClaude = async (e: React.FormEvent) => {
@@ -136,7 +141,11 @@ export function CreateAgentModal({ onClose, onCreated, onOpenSettings }: CreateA
                 {onOpenSettings && (
                   <button
                     type="button"
-                    onClick={() => { onClose(); onOpenSettings() }}
+                    onClick={() => {
+                      logger.info('CreateAgentModal', 'openSettings clicked')
+                      onClose()
+                      onOpenSettings()
+                    }}
                     className="mt-2 text-violet-600 dark:text-violet-400 hover:underline"
                   >
                     打开设置 →

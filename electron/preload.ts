@@ -3,6 +3,10 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('electronAPI', {
   app: {
     setCurrentChannel: (channelId: string | null) => ipcRenderer.invoke('app:setCurrentChannel', channelId),
+    log: (level: string, tag: string, message: string, data?: unknown) =>
+      ipcRenderer.invoke('app:log', level, tag, message, data),
+    getLogsPath: () => ipcRenderer.invoke('app:getLogsPath') as Promise<string>,
+    openLogsFolder: () => ipcRenderer.invoke('app:openLogsFolder') as Promise<void>,
   },
   channels: {
     list: () => ipcRenderer.invoke('channels:list'),
