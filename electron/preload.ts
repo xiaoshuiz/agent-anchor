@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     log: (level: string, tag: string, message: string, data?: unknown) =>
       ipcRenderer.invoke('app:log', level, tag, message, data),
     getLogsPath: () => ipcRenderer.invoke('app:getLogsPath') as Promise<string>,
+    readLogs: () => ipcRenderer.invoke('app:readLogs') as Promise<string>,
     openLogsFolder: () => ipcRenderer.invoke('app:openLogsFolder') as Promise<void>,
   },
   channels: {

@@ -3,7 +3,7 @@
  * 便于排查问题，用户可在设置中查看日志路径
  */
 import { app } from 'electron'
-import { appendFileSync, existsSync, mkdirSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 const LOG_DIR = 'logs'
@@ -48,4 +48,14 @@ export function getLogFilePath(): string {
 
 export function getLogsDir(): string {
   return join(app.getPath('userData'), LOG_DIR)
+}
+
+export function readLogContent(): string {
+  const path = getLogPath()
+  if (!existsSync(path)) return ''
+  try {
+    return readFileSync(path, 'utf-8')
+  } catch {
+    return ''
+  }
 }

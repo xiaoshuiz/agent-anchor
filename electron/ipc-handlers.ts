@@ -2,7 +2,7 @@ import { ipcMain, app, shell } from 'electron'
 import Store from 'electron-store'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { log as appLog, getLogsDir } from './logger'
+import { log as appLog, getLogsDir, readLogContent } from './logger'
 import {
   initDb,
   seedGeneralIfEmpty,
@@ -432,6 +432,7 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('app:getLogsPath', () => getLogsDir())
+  ipcMain.handle('app:readLogs', () => readLogContent())
 
   ipcMain.handle('app:openLogsFolder', async () => {
     const dir = getLogsDir()

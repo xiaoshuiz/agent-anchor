@@ -39,6 +39,7 @@ export interface ElectronAPI {
     setCurrentChannel: (channelId: string | null) => Promise<void>
     log?: (level: string, tag: string, message: string, data?: unknown) => Promise<void>
     getLogsPath?: () => Promise<string>
+    readLogs?: () => Promise<string>
     openLogsFolder?: () => Promise<void>
   }
   channels: {

@@ -3,9 +3,10 @@ import { ChannelList } from './ChannelList'
 import { DmList } from './DmList'
 import { CollapseButton } from './CollapseButton'
 import { SettingsModal } from '@/components/Settings/SettingsModal'
+import { LogsModal } from '@/components/Logs/LogsModal'
 import { useUIStore } from '@/stores/uiStore'
 import { logger } from '@/utils/logger'
-import { AtSign, Settings } from 'lucide-react'
+import { AtSign, FileText, Settings } from 'lucide-react'
 
 export function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed)
@@ -16,6 +17,7 @@ export function Sidebar() {
   const setShowCreateAgentModal = useUIStore((s) => s.setShowCreateAgentModal)
   const setOpenAddAgentAfterSettingsClose = useUIStore((s) => s.setOpenAddAgentAfterSettingsClose)
   const [showSettings, setShowSettings] = useState(false)
+  const [showLogs, setShowLogs] = useState(false)
 
   useEffect(() => {
     window.electronAPI?.sidebar?.getCollapsed?.().then(setSidebarCollapsed)
@@ -30,6 +32,14 @@ export function Sidebar() {
       <div className="p-2 border-b border-slate-700 flex items-center justify-end gap-1 shrink-0">
         <button
           type="button"
+          onClick={() => setShowLogs(true)}
+          className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
+          aria-label="日志"
+        >
+          <FileText className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
           onClick={() => {
             logger.info('Sidebar', 'Settings opened from gear')
             setShowSettings(true)
@@ -41,6 +51,7 @@ export function Sidebar() {
         </button>
         <CollapseButton />
       </div>
+      {showLogs && <LogsModal onClose={() => setShowLogs(false)} />}
       {showSettings && (
         <SettingsModal
           onClose={() => {
