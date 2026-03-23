@@ -52,13 +52,24 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
     const lastAt = textBefore.lastIndexOf('@')
     if (lastAt >= 0) {
       const afterAt = textBefore.slice(lastAt + 1)
-      setShowMentionPopup(true)
-      setMentionQuery(afterAt)
-      setMentionIndex(0)
+      const hasMatch =
+        afterAt.trim() === '' ||
+        agents.some(
+          (a) =>
+            a.name.toLowerCase().includes(afterAt.toLowerCase()) ||
+            a.id.toLowerCase().includes(afterAt.toLowerCase())
+        )
+      if (hasMatch) {
+        setShowMentionPopup(true)
+        setMentionQuery(afterAt)
+        setMentionIndex(0)
+      } else {
+        setShowMentionPopup(false)
+      }
     } else {
       setShowMentionPopup(false)
     }
-  }, [value])
+  }, [value, agents])
 
   const insertMention = (agentName: string) => {
     const sel = inputRef.current?.selectionStart ?? value.length
