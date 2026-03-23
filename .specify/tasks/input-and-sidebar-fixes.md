@@ -69,9 +69,18 @@
 | `Sidebar.tsx` | 折叠时条件隐藏 Logs、Settings 按钮 |
 | `MessageInput.tsx` | input → textarea；增加发送按钮；修正 Enter/Shift+Enter；min 1 行 max 5 行 |
 
+### 5. 未选中时隐藏输入框
+
+**期望**：未选中 channel 或 direct message 时，不显示输入框。
+
+**实现要点**：`MainContent` 中仅在 `selectedChannelId` 有值时渲染 `MessageInput`。
+
+---
+
 ## 验收条件
 
 - [ ] 侧边栏折叠后，Config 与 Logs 图标完全不可见
 - [ ] Enter 发送消息，Shift+Enter 换行
 - [ ] 点击发送按钮可发送
 - [ ] 输入多行时自动增高，最多 5 行，超出可滚动
+- [ ] 未选中 channel/DM 时输入框隐藏

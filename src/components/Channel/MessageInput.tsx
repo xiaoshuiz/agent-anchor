@@ -3,6 +3,7 @@ import { Send } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useAgents } from '@/hooks/useAgents'
 import { parseMentions } from '@/utils/parseMentions'
+import { logger } from '@/utils/logger'
 
 const LINE_HEIGHT = 24
 const MIN_LINES = 1
@@ -77,9 +78,16 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
 
   const sendMessage = async () => {
     const trimmed = value.trim()
-    if (!trimmed || !selectedChannelId) return
+    logger.info('MessageInput', 'sendMessage called', { trimmed: !!trimmed, selectedChannelId, hasApi: !!window.electronAPI?.messages?.send })
+    if (!trimmed || !selectedChannelId) {
+      logger.info('MessageInput', 'sendMessage early return', { trimmed: !!trimmed, selectedChannelId })
+      return
+    }
     const api = window.electronAPI?.messages
-    if (!api?.send) return
+    if (!api?.send) {
+      logger.warn('MessageInput', 'messages.send API not available')
+      return
+    }
     const mentions = parseMentions(trimmed, agents)
     const result = await api.send(
       selectedChannelId,
@@ -88,9 +96,10 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
       mentions.length > 0 ? mentions : undefined
     )
     if (result && 'error' in result) {
-      console.error('Send failed:', result.error)
+      logger.error('MessageInput', 'Send failed', { error: result.error })
       return
     }
+    logger.info('MessageInput', 'Message sent successfully')
     setValue('')
     refreshMessages()
   }
@@ -104,7 +113,7 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
     sendMessage()
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showMentionPopup) {
       if (e.key === 'Escape') {
         setShowMentionPopup(false)
@@ -122,14 +131,15 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
         return
       }
       if (e.key === 'Enter' && filteredAgents.length > 0) {
-        insertMention(filteredAgents[mentionIndex]?.name ?? filteredAgents[mentionIndex]?.id ?? '')
         e.preventDefault()
+        insertMention(filteredAgents[mentionIndex]?.name ?? filteredAgents[mentionIndex]?.id ?? '')
         return
       }
     }
-    // Enter = 发送, Shift+Enter = 换行 (Slack 风格)
+    // Enter = 发送, Shift+Enter = 换行
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      e.stopPropagation()
       sendMessage()
     }
   }
