@@ -30,25 +30,29 @@ export function Sidebar() {
       }`}
     >
       <div className="p-2 border-b border-slate-700 flex items-center justify-end gap-1 shrink-0">
-        <button
-          type="button"
-          onClick={() => setShowLogs(true)}
-          className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
-          aria-label="日志"
-        >
-          <FileText className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            logger.info('Sidebar', 'Settings opened from gear')
-            setShowSettings(true)
-          }}
-          className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
-          aria-label="Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+        {!collapsed && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowLogs(true)}
+              className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
+              aria-label="日志"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                logger.info('Sidebar', 'Settings opened from gear')
+                setShowSettings(true)
+              }}
+              className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white"
+              aria-label="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </>
+        )}
         <CollapseButton />
       </div>
       {showLogs && <LogsModal onClose={() => setShowLogs(false)} />}

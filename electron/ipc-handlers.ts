@@ -308,6 +308,7 @@ export function registerIpcHandlers(): void {
       | { id: string; channel_id: string; from_type: string; from_id: string; content: string; timestamp: number; thread_ts: string | null; mentions: string | null }
       | { error: string }
     > => {
+      safeLog('info', 'ipc', 'messages:send invoked', { channelId, contentLen: content?.length ?? 0 })
       const database = getDb()
       if (!database) return { error: 'Database not initialized' }
       const trimmed = content?.trim?.() ?? ''

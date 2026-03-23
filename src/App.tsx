@@ -52,6 +52,7 @@ function UnreadSync() {
 
 function MainContent() {
   const selectedActivityView = useUIStore((s) => s.selectedActivityView)
+  const selectedChannelId = useUIStore((s) => s.selectedChannelId)
   if (selectedActivityView === 'mentions') {
     return (
       <>
@@ -62,7 +63,7 @@ function MainContent() {
   return (
     <>
       <MessageList />
-      <MessageInput />
+      {selectedChannelId && <MessageInput />}
     </>
   )
 }

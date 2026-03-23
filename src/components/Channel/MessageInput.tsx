@@ -1,7 +1,13 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Send } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useAgents } from '@/hooks/useAgents'
 import { parseMentions } from '@/utils/parseMentions'
+import { logger } from '@/utils/logger'
+
+const LINE_HEIGHT = 24
+const MIN_LINES = 1
+const MAX_LINES = 5
 
 interface MessageInputProps {
   /** When provided, messages are sent as thread replies */
@@ -13,11 +19,24 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
   const [showMentionPopup, setShowMentionPopup] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionIndex, setMentionIndex] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const selectedChannelId = useUIStore((s) => s.selectedChannelId)
   const refreshMessages = useUIStore((s) => s.refreshMessages)
   const { agents } = useAgents()
   const threadTs = threadTsProp
+
+  const adjustHeight = useCallback(() => {
+    const ta = inputRef.current
+    if (!ta) return
+    ta.style.height = 'auto'
+    const minH = LINE_HEIGHT * MIN_LINES
+    const maxH = LINE_HEIGHT * MAX_LINES
+    const h = Math.min(Math.max(ta.scrollHeight, minH), maxH)
+    ta.style.height = `${h}px`
+    ta.style.overflowY = ta.scrollHeight > maxH ? 'auto' : 'hidden'
+  }, [])
+
+  useEffect(adjustHeight, [value, adjustHeight])
 
   const filteredAgents = mentionQuery
     ? agents.filter(
@@ -59,9 +78,16 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
 
   const sendMessage = async () => {
     const trimmed = value.trim()
-    if (!trimmed || !selectedChannelId) return
+    logger.info('MessageInput', 'sendMessage called', { trimmed: !!trimmed, selectedChannelId, hasApi: !!window.electronAPI?.messages?.send })
+    if (!trimmed || !selectedChannelId) {
+      logger.info('MessageInput', 'sendMessage early return', { trimmed: !!trimmed, selectedChannelId })
+      return
+    }
     const api = window.electronAPI?.messages
-    if (!api?.send) return
+    if (!api?.send) {
+      logger.warn('MessageInput', 'messages.send API not available')
+      return
+    }
     const mentions = parseMentions(trimmed, agents)
     const result = await api.send(
       selectedChannelId,
@@ -70,9 +96,10 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
       mentions.length > 0 ? mentions : undefined
     )
     if (result && 'error' in result) {
-      console.error('Send failed:', result.error)
+      logger.error('MessageInput', 'Send failed', { error: result.error })
       return
     }
+    logger.info('MessageInput', 'Message sent successfully')
     setValue('')
     refreshMessages()
   }
@@ -86,7 +113,7 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
     sendMessage()
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showMentionPopup) {
       if (e.key === 'Escape') {
         setShowMentionPopup(false)
@@ -104,13 +131,15 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
         return
       }
       if (e.key === 'Enter' && filteredAgents.length > 0) {
-        insertMention(filteredAgents[mentionIndex]?.name ?? filteredAgents[mentionIndex]?.id ?? '')
         e.preventDefault()
+        insertMention(filteredAgents[mentionIndex]?.name ?? filteredAgents[mentionIndex]?.id ?? '')
         return
       }
     }
+    // Enter = 发送, Shift+Enter = 换行
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      e.stopPropagation()
       sendMessage()
     }
   }
@@ -119,17 +148,27 @@ export function MessageInput({ threadTs: threadTsProp }: MessageInputProps = {})
     <footer className="p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0 relative">
       <form onSubmit={handleSubmit}>
         <div className="relative">
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
+            rows={1}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              threadTs ? 'Reply in thread...' : 'Type a message... (use @ to mention)'
+              threadTs ? 'Reply in thread...' : 'Type a message... (use @ to mention, Enter to send)'
             }
-            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full px-4 py-2 pr-12 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none leading-6"
+            style={{ minHeight: LINE_HEIGHT, maxHeight: LINE_HEIGHT * MAX_LINES }}
           />
+          <button
+            type="button"
+            onClick={sendMessage}
+            disabled={!value.trim() || !selectedChannelId}
+            className="absolute right-2 bottom-2 p-1.5 rounded-md text-slate-400 hover:text-violet-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors"
+            aria-label="发送"
+          >
+            <Send className="w-4 h-4" />
+          </button>
           {showMentionPopup && (
             <div
               className="absolute bottom-full left-0 right-0 mb-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg"
