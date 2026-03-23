@@ -3,7 +3,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 
-const DB_VERSION = 6
+const DB_VERSION = 7
 
 let db: Database.Database | null = null
 
@@ -19,9 +19,13 @@ export function initDb(): Database.Database {
   return db
 }
 
+function getDbVersion(database: Database.Database): number {
+  const row = database.prepare('PRAGMA user_version').get() as { user_version: number }
+  return row?.user_version ?? 0
+}
+
 function runMigrations(database: Database.Database): void {
-  const version = database.prepare('PRAGMA user_version').get() as { user_version: number }
-  const current = version?.user_version ?? 0
+  let current = getDbVersion(database)
 
   if (current < 1) {
     database.exec(`
@@ -58,7 +62,8 @@ function runMigrations(database: Database.Database): void {
       CREATE INDEX idx_messages_channel_ts ON messages(channel_id, timestamp);
       CREATE INDEX idx_threads_channel ON threads(channel_id);
     `)
-    database.pragma(`user_version = ${DB_VERSION}`)
+    database.pragma('user_version = 1')
+    current = 1
   }
 
   if (current >= 1 && current < 2) {
@@ -68,6 +73,7 @@ function runMigrations(database: Database.Database): void {
       // Column may already exist
     }
     database.pragma('user_version = 2')
+    current = 2
   }
 
   if (current >= 2 && current < 3) {
@@ -85,6 +91,7 @@ function runMigrations(database: Database.Database): void {
       CREATE INDEX IF NOT EXISTS idx_channel_unread_count ON channel_unread(count) WHERE count > 0;
     `)
     database.pragma('user_version = 3')
+    current = 3
   }
 
   if (current >= 3 && current < 4) {
@@ -97,6 +104,7 @@ function runMigrations(database: Database.Database): void {
       CREATE INDEX IF NOT EXISTS idx_channel_members_channel ON channel_members(channel_id);
     `)
     database.pragma('user_version = 4')
+    current = 4
   }
 
   if (current >= 4 && current < 5) {
@@ -111,6 +119,7 @@ function runMigrations(database: Database.Database): void {
       // Column may already exist
     }
     database.pragma('user_version = 5')
+    current = 5
   }
 
   if (current >= 5 && current < 6) {
@@ -118,6 +127,17 @@ function runMigrations(database: Database.Database): void {
       database.exec('ALTER TABLE agents ADD COLUMN provider TEXT DEFAULT "websocket"')
     } catch {
       // Column may already exist
+    }
+    database.pragma('user_version = 6')
+    current = 6
+  }
+
+  // Fix: DBs created with buggy migration jumped to v6 without mentions column
+  if (current === 6) {
+    try {
+      database.exec('ALTER TABLE messages ADD COLUMN mentions TEXT')
+    } catch {
+      // Column already exists
     }
     database.pragma(`user_version = ${DB_VERSION}`)
   }
