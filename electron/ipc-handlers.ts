@@ -329,6 +329,19 @@ export function registerIpcHandlers(): void {
         const mentionIds = mentions && mentions.length > 0 ? mentions : []
         const claudeApiKey = getAgentKeysStore().get('claude')
 
+        if (ch.type !== 'dm' && mentionIds.length === 0) {
+          safeLog('info', 'ipc', 'messages:send no agent route (channel needs @mention)', {
+            channelId,
+            channelName: channel.name,
+          })
+        }
+        if (!claudeApiKey && (dmAgentId || mentionIds.length > 0)) {
+          safeLog('warn', 'ipc', 'messages:send Claude agents skipped: no API key in Settings', {
+            dmAgentId,
+            mentionIds,
+          })
+        }
+
         const claudeAgents: Array<{ id: string; name: string; description: string | null }> = []
         if (dmAgentId) {
           const agent = getAgentById(database, dmAgentId)
@@ -347,6 +360,11 @@ export function registerIpcHandlers(): void {
           if (!claudeAgents.some((a) => a.id === mid)) websocketAgentIds.add(mid)
         }
 
+        if (claudeAgents.length > 0) {
+          safeLog('info', 'ipc', 'messages:send invoking Claude', {
+            agentIds: claudeAgents.map((a) => a.id),
+          })
+        }
         for (const agent of claudeAgents) {
           if (!claudeApiKey) continue
           respondWithClaude(claudeApiKey, trimmed, {
